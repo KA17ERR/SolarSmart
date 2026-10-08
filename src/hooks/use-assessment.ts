@@ -2,19 +2,19 @@
 import { useMemo, useState } from "react";
 import { calculateSolar, DEFAULT_INPUTS, validateInputs, type SolarInputs } from "@/lib/solar";
 
-export function useAssessment() {
-  const [inputs, setInputs] = useState<SolarInputs>(DEFAULT_INPUTS);
-  const [errors, setErrors] = useState<string[]>([]);
+export function useAssessment(initialInputs: SolarInputs = DEFAULT_INPUTS) {
+  const [inputs, setInputs] = useState<SolarInputs>(initialInputs);
   const validationErrors = useMemo(() => validateInputs(inputs), [inputs]);
+  const isValid = validationErrors.length === 0;
   // Keep the page usable while a partially typed/invalid form value is being corrected.
-  const result = useMemo(() => calculateSolar(validationErrors.length ? DEFAULT_INPUTS : inputs), [inputs, validationErrors]);
+  const modelInputs = isValid ? inputs : DEFAULT_INPUTS;
+  const result = useMemo(() => calculateSolar(modelInputs), [modelInputs]);
   function updateField(field: keyof SolarInputs, value: string) {
-    const parsed = Number(value);
-    setInputs(current => ({ ...current, [field]: Number.isFinite(parsed) ? parsed : 0 }));
-    setErrors([]);
+    const parsed = value.trim() ? Number(value) : Number.NaN;
+    setInputs(current => ({ ...current, [field]: Number.isFinite(parsed) ? parsed : Number.NaN }));
   }
-  function applyInputs(next: SolarInputs) { setInputs(next); setErrors([]); }
-  function validate() { const nextErrors = validateInputs(inputs); setErrors(nextErrors); return nextErrors.length === 0; }
-  function reset() { setInputs(DEFAULT_INPUTS); setErrors([]); }
-  return { inputs, result, errors, updateField, applyInputs, validate, reset };
+  function applyInputs(next: SolarInputs) { setInputs(next); }
+  function validate() { return isValid; }
+  function reset() { setInputs(DEFAULT_INPUTS); }
+  return { inputs, modelInputs, result, errors: validationErrors, isValid, updateField, applyInputs, validate, reset };
 }

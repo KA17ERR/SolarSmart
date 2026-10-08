@@ -1,12 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Optional SolarSmart explanation API. No resources are created by the frontend.
+Description: Optional SolarSmart assistant API. The local frontend works without deploying this template.
 Globals:
-  Api:
-    Cors:
-      AllowMethods: "'POST,OPTIONS'"
-      AllowHeaders: "'Content-Type'"
-      AllowOrigin: "'*'"
   Function:
     Timeout: 20
     Runtime: python3.12
@@ -15,14 +10,12 @@ Globals:
       Variables:
         STRANDS_ENABLED: !Ref StrandsEnabled
         STRANDS_MODEL_ID: !Ref StrandsModelId
-    Policies:
-      - !If
-        - EnableStrands
-        - BedrockInvokeModelPolicy:
-            ModelId: !Ref StrandsModelId
-        - !Ref AWS::NoValue
-        AWS_REGION: !Ref AWS::Region
+        DEPLOYMENT_ENV: !Ref DeploymentEnvironment
 Parameters:
+  DeploymentEnvironment:
+    Type: String
+    Default: dev
+    AllowedValues: [local, dev, prod]
   StrandsEnabled:
     Type: String
     Default: 'false'
@@ -30,21 +23,92 @@ Parameters:
   StrandsModelId:
     Type: String
     Default: ''
+    Description: Direct Amazon Bedrock foundation model ID. Required only when StrandsEnabled is true.
+  RequireApiKey:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+    AllowedValues: [7, 14, 30, 90]
+Rules:
+  RequireModelIdWhenStrandsEnabled:
+    RuleCondition: !Equals [!Ref StrandsEnabled, 'true']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref StrandsModelId, '']]
+        AssertDescription: Set StrandsModelId to a direct foundation model ID when StrandsEnabled is true.
 Conditions:
   EnableStrands: !Equals [!Ref StrandsEnabled, 'true']
+  IsProd: !Equals [!Ref DeploymentEnvironment, prod]
 Resources:
+  AssistantApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref DeploymentEnvironment
+      Auth:
+        ApiKeyRequired: !Equals [!Ref RequireApiKey, 'true']
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          UsagePlanName: SolarSmartAssistantUsage
+          Throttle:
+            RateLimit: 2
+            BurstLimit: 5
+          Quota:
+            Limit: 500
+            Period: MONTH
   ExplainFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub ${AWS::StackName}-assistant
       CodeUri: backend/
       Handler: app.handler
+      Role: !GetAtt ExplainFunctionRole.Arn
       Events:
         Explain:
           Type: Api
           Properties:
+            RestApiId: !Ref AssistantApi
             Path: /explain
             Method: post
+  ExplainFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SolarSmartAssistantLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-assistant:*
+        - !If
+          - EnableStrands
+          - PolicyName: SolarSmartAssistantBedrockInference
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - bedrock:InvokeModel
+                    - bedrock:InvokeModelWithResponseStream
+                  Resource: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/${StrandsModelId}
+          - !Ref AWS::NoValue
+  ExplainFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-assistant
+      RetentionInDays: !Ref LogRetentionDays
 Outputs:
   ExplainApiUrl:
-    Description: Optional API endpoint; set NEXT_PUBLIC_API_BASE_URL in the frontend to enable it.
-    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod
+    Description: Public API Gateway URL for server-side SOLARSMART_AI_ENDPOINT. API key usage-plan required by default; append /explain.
+    Value: !Sub https://${AssistantApi}.execute-api.${AWS::Region}.amazonaws.com/${DeploymentEnvironment}

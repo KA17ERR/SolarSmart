@@ -1,17 +1,24 @@
 import type { SolarResults } from "@/lib/solar";
 
-/** Calls the optional API only when explicitly configured; failures remain non-blocking. */
-export async function requestOptionalExplanation(results: SolarResults): Promise<string | null> {
-  const endpoint = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!endpoint) return null;
-  const response = await fetch(`${endpoint.replace(/\/$/, "")}/explain`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ results }),
-    signal: AbortSignal.timeout(4500),
-  });
-  if (!response.ok) throw new Error("The optional explanation service is unavailable.");
-  const payload: unknown = await response.json();
-  if (typeof payload === "object" && payload !== null && "explanation" in payload && typeof payload.explanation === "string") return payload.explanation;
-  throw new Error("The optional explanation service returned an invalid response.");
+/** A minimal, versioned facts-only envelope; the service may explain but never recalculate it. */
+export function toExplanationPayload(results: SolarResults) {
+  return {
+    schemaVersion: results.schemaVersion,
+    systemKw: results.systemKw,
+    roofCapacityKw: results.roofCapacityKw,
+    roofLimited: results.roofLimited,
+    annualProductionKwh: results.annualProductionKwh,
+    annualSelfConsumedKwh: results.annualSelfConsumedKwh,
+    annualExportedKwh: results.annualExportedKwh,
+    annualRetailSavingsUsd: results.annualRetailSavingsUsd,
+    annualExportRevenueUsd: results.annualExportRevenueUsd,
+    annualSavings: results.annualSavings,
+    netCost: results.netCost,
+    paybackYears: results.paybackYears,
+    projectionHorizonYears: results.projectionHorizonYears,
+    co2AvoidedKg: results.co2AvoidedKg,
+  };
 }
+
+// All optional assistant calls now use the validated same-origin server interface in
+// `services/assessment-assistant.ts`. Keep this pure serializer for compatibility/tests.

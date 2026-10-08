@@ -1,6 +1,28 @@
 version = 0.1
+
 [default.build.parameters]
 cached = true
 parallel = true
-[default.local_start_api.parameters]
+
+[local.local_start_api.parameters]
 port = 3001
+parameter_overrides = "DeploymentEnvironment=local RequireApiKey=false StrandsEnabled=false"
+
+# Explicitly selected, opt-in deployment profiles. Edit region and names before deploying.
+[dev.deploy.parameters]
+stack_name = "solarsmart-assistant-dev"
+region = "us-east-1"
+resolve_s3 = true
+s3_prefix = "solarsmart-assistant-dev"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+parameter_overrides = "DeploymentEnvironment=dev RequireApiKey=true StrandsEnabled=false LogRetentionDays=14"
+
+[prod.deploy.parameters]
+stack_name = "solarsmart-assistant-prod"
+region = "us-east-1"
+resolve_s3 = true
+s3_prefix = "solarsmart-assistant-prod"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+parameter_overrides = "DeploymentEnvironment=prod RequireApiKey=true StrandsEnabled=false LogRetentionDays=30"
