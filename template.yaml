@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Optional SolarSmart explanation API. No resources are created by the frontend.
+Globals:
+  Api:
+    Cors:
+      AllowMethods: "'POST,OPTIONS'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin: "'*'"
+  Function:
+    Timeout: 20
+    Runtime: python3.12
+    MemorySize: 256
+    Environment:
+      Variables:
+        STRANDS_ENABLED: !Ref StrandsEnabled
+        STRANDS_MODEL_ID: !Ref StrandsModelId
+    Policies:
+      - !If
+        - EnableStrands
+        - BedrockInvokeModelPolicy:
+            ModelId: !Ref StrandsModelId
+        - !Ref AWS::NoValue
+        AWS_REGION: !Ref AWS::Region
+Parameters:
+  StrandsEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  StrandsModelId:
+    Type: String
+    Default: ''
+Conditions:
+  EnableStrands: !Equals [!Ref StrandsEnabled, 'true']
+Resources:
+  ExplainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: app.handler
+      Events:
+        Explain:
+          Type: Api
+          Properties:
+            Path: /explain
+            Method: post
+Outputs:
+  ExplainApiUrl:
+    Description: Optional API endpoint; set NEXT_PUBLIC_API_BASE_URL in the frontend to enable it.
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod

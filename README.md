@@ -15,7 +15,11 @@ Open http://localhost:3000. The prominent **DEMO MODE** badge indicates the loca
 
 ## What the estimate means
 
-The calculator in `src/lib/solar.ts` is a deterministic, separately tested TypeScript module. It uses explicitly entered assumptions: average bill, utility rate per kWh, peak sun hours, system cost, incentive assumption, utility price escalation, and bill offset. The demo rate ($0.15/kWh), sun hours, system cost, and CO₂ factor are illustrative placeholders only; the app never treats them as your actual tariff, subsidy, or live irradiance. The demo incentive is 0%. A generic 80% system sizing factor is also used. This is not an installer quote or a prediction. Verify tariff, eligibility, production, and costs with local sources and qualified professionals. The app does not claim government approval or quote live irradiance.
+The calculator in `src/lib/solar.ts` is a deterministic, separately tested TypeScript module. It takes bill, rate, sun-hours, roof area, usable roof share, orientation and shade factors, system cost, incentive, escalation, and bill-offset assumptions. The estimate first models target annual energy from bill ÷ assumed utility rate × bill offset. Requested kW uses peak sun hours × 365 × a generic 80% sizing factor × orientation × shade. Usable roof capacity uses usable square footage ÷ a generic 60 sq ft/kW layout assumption. The modeled system is capped at that roof capacity; generation and first-year savings are then capped by modeled demand, so an undersized roof cannot create extra savings in the model. This does not assess roof structure, actual module layout, wiring, code, or permitting.
+
+The demo rate ($0.15/kWh), sun-hours, roof size, system cost, 80% sizing factor, 60 sq ft/kW assumption, and 0.385 kg CO₂/kWh factor are illustrative placeholders only. They are not actual tariffs, subsidy amounts, verified roof measurements, live irradiance, approvals, or verified savings. The demo incentive is 0%. Results are planning estimates, not installer quotes, engineering assessments, or guarantees. Verify tariffs, eligibility, production, roof suitability, and costs with local official sources and qualified professionals.
+
+The dashboard includes three fictional built-in scenarios, a form for editing assumptions, live comparison metrics, next-step guidance, and a local text report export. The report includes the assumptions and model notes. No registration or file upload is used.
 
 ## Checks
 
@@ -30,17 +34,21 @@ npm run build
 
 ```mermaid
 flowchart LR
-  U[Next.js dashboard] --> C[Pure TypeScript solar calculator]
-  C --> V[Recharts estimate views]
-  U --> F[Local deterministic explanation]
-  U -. optional configured URL .-> A[API Gateway]
-  A --> L[Optional SAM Lambda]
-  L -. STRANDS_ENABLED=true .-> S[Strands Agents SDK]
-  L -. disabled or failure .-> F
-  L -. future adapters .-> AWS[AWS: S3 / DynamoDB / Cognito / CloudFront]
+  Page[Next.js App Router dashboard] --> UI[Reusable estimate form, metrics, scenario cards]
+  UI --> State[useAssessment state hook]
+  State --> Validation[Typed input validation]
+  Validation --> Calc[Pure solar calculation module]
+  Calc --> Charts[Recharts views]
+  Page --> Demo[Built-in scenario data]
+  Page --> Report[Local report generator]
+  Page --> Fallback[Deterministic explanation]
+  Page -. Optional endpoint only .-> API[API Gateway]
+  API --> Lambda[Optional SAM Lambda]
+  Lambda -. STRANDS_ENABLED .-> Strands[Strands Agent · explanation only]
+  Lambda -. disabled / error .-> Fallback
 ```
 
-The browser calculator and demo are independent of the backend. The API and AWS resources are opt-in. Never move private credentials into `NEXT_PUBLIC_*` variables or frontend bundles.
+Component boundaries: `src/app` owns routing and page composition; `src/components/solar` contains reusable UI; `src/hooks/use-assessment.ts` owns local form/scenario assessment state; `src/lib/validation.ts` validates inputs; `src/lib/solar.ts` computes results; `src/lib/scenarios.ts` contains fictional demo data; `src/lib/ai/fallback.ts` and `src/lib/services/explanation-client.ts` handle optional explanation; `src/lib/report.ts` formats the report. The core dashboard has no cloud data-access dependency. Never move private credentials into `NEXT_PUBLIC_*` variables or frontend bundles.
 
 ## LocalStack
 
