@@ -23,6 +23,7 @@ import { clearAssessmentHistory, deleteAssessmentHistory, readAssessmentHistory,
 import { buildRecommendations } from "@/lib/recommendations";
 import { ReportDocument } from "@/components/solar/report-document";
 import { AssessmentAssistant } from "@/components/solar/assessment-assistant";
+import { AccordionGallery } from "@/components/solar/accordion-gallery";
 import { calculateSolar } from "@/lib/solar";
 import type { AssistantScenarioSummary } from "@/lib/assistant/contract";
 
@@ -48,6 +49,7 @@ export function AssessmentDashboard({ initialScenario = "balanced", initialInput
   const illustrativeDemo = activeDemo || shownContext?.isDemoExample === true;
   const scenarioName = activeDemo ? scenarioNameFor(activeScenario) : shownContext ? "Custom assessment" : "Custom scenario";
   const chartData = buildSavingsChartData(result).map(row => ({ ...row, solar: Math.round(row.solar), utility: Math.round(row.utility) }));
+  const solarCoverage = result.annualConsumptionKwh > 0 ? Math.min(100, result.annualSelfConsumedKwh / result.annualConsumptionKwh * 100) : null;
   const assistantScenarios = useMemo<AssistantScenarioSummary[]>(() => {
     const current: AssistantScenarioSummary = { name: scenarioName, source: "current assessment", systemKw: result.systemKw, annualGenerationKwh: result.annualProductionKwh, annualSavingsUsd: result.annualSavings, installationCostLowUsd: result.installationCostRangeUsd.low, installationCostHighUsd: result.installationCostRangeUsd.high, paybackYears: result.paybackYears };
     const demos = DEMO_SCENARIOS.filter(item => item.id !== activeScenario).map(item => {
@@ -116,25 +118,32 @@ export function AssessmentDashboard({ initialScenario = "balanced", initialInput
         {shownContext && <section className="assessment-context-card" aria-labelledby="assessment-context-title"><div><p className="eyebrow">Reviewed inputs</p><h2 id="assessment-context-title">{PROPERTY_LABEL[shownContext.propertyType]} · {ROOF_LABEL[shownContext.roofType]}</h2><p>{shownContext.cityOrPostcode} · {shownContext.usableRoofArea.toLocaleString()} {shownContext.areaUnit === "sq-m" ? "m²" : "sq ft"} usable area</p></div><dl><div><dt>Energy entry</dt><dd>{shownContext.energyInputMethod === "monthly-bill" ? `${money(shownContext.monthlyEnergyInput)} / month` : `${shownContext.monthlyEnergyInput.toLocaleString()} kWh / month`}</dd></div><div><dt>Tariff</dt><dd>${shownContext.tariffUsdPerKwh.toFixed(3)}/kWh {shownContext.tariffWasAssumed ? "· assumed" : "· entered"}</dd></div><div><dt>Shade · orientation</dt><dd>{SHADING_LABEL[shownContext.shading]} · {ORIENTATION_LABEL[shownContext.orientation]}</dd></div>{shownContext.budgetUsd !== undefined && <div><dt>Optional budget context</dt><dd>{money(shownContext.budgetUsd)}</dd></div>}</dl><p className="assessment-context-note">Your general location is shown for context only. No local tariff, weather, or irradiance lookup was performed.</p></section>}
 
         {!isValid ? <section className="results-unavailable" aria-labelledby="results-unavailable-title"><Alert variant="error" title="Update the highlighted assumptions to recalculate">Results, charts, recommendations, and exports are hidden because the current input set is invalid. No previous estimate is shown as if it matched these values.</Alert><div id="solar-assessment"><EstimateForm inputs={inputs} errors={errors} onChange={changeField} onReset={reset} onValidate={() => { if (assessment.validate()) flash("Estimate recalculated using your current assumptions"); }}/></div></section> : <>
-          <section className="metric-grid metric-grid-six" id="dashboard" aria-label="Calculated solar results">
-            <MetricCard icon={<Gauge size={14}/>} label="Estimated system capacity" value={`${result.systemKw.toFixed(1)} kW`} foot="Roof-constrained planning size" help="Kilowatts (kW) describe the modelled peak system capacity, not its annual energy."/>
+          <section className="metric-grid metric-grid-primary" id="dashboard" aria-label="Solar results overview">
             <MetricCard icon={<Sun size={14}/>} label="Annual generation" value={`${Math.round(result.annualProductionKwh).toLocaleString()} kWh`} foot="Generic yield model · estimated" help="Kilowatt-hours (kWh) estimate energy produced over a year using entered and generic factors."/>
+            <MetricCard icon={<Gauge size={14}/>} label="Household consumption" value={`${Math.round(result.annualConsumptionKwh).toLocaleString()} kWh`} foot="Modeled annual use · estimated" help="The annualized electricity use calculated from your entered monthly consumption assumption."/>
             <MetricCard icon={<Wallet size={14}/>} label="Annual bill savings" value={money(result.annualSavings)} foot={`${money(result.monthlySavings)} per month · estimated`} help="Combines on-site solar use valued at retail rate and exports at the separate export-credit assumption."/>
-            <MetricCard icon={<Wallet size={14}/>} label="Installation cost range" value={`${money(result.installationCostRangeUsd.low)}–${money(result.installationCostRangeUsd.high)}`} foot="Illustrative · not an installer quote" help="A range around the entered expected cost. Local quotes may differ materially."/>
-            <MetricCard icon={<ArrowDownRight size={14}/>} label="Simple payback" value={result.paybackYears === null ? "Not reached" : `${result.paybackYears.toFixed(1)} yrs`} foot={`Model horizon: ${result.projectionHorizonYears} years`} help="Estimated time until cumulative modelled savings match expected net system cost. Financing and ongoing costs are excluded."/>
-            <MetricCard icon={<Leaf size={14}/>} label="Avoided emissions" value={`${(result.co2AvoidedKg / 1000).toFixed(2)} t CO₂`} foot="Generic factor · estimated annually" help="Annual generation multiplied by a generic grid-emissions factor; this is not a lifecycle assessment."/>
+            <MetricCard icon={<ChartNoAxesCombined size={14}/>} label="Solar coverage" value={solarCoverage === null ? "Not estimated" : `${solarCoverage.toFixed(0)}%`} foot="Share of modeled annual use served on-site" help="Estimated self-consumed solar divided by modeled household consumption. It is not an hourly grid-independence measure."/>
           </section>
+          <details className="dashboard-disclosure dashboard-technical-summary"><summary>System details, cost, payback & environmental estimate</summary><div className="metric-grid metric-grid-technical">
+            <MetricCard icon={<Gauge size={14}/>} label="Estimated capacity" value={`${result.systemKw.toFixed(1)} kW`} foot="Roof-constrained planning size" help="Kilowatts describe modeled peak system capacity, not annual energy."/>
+            <MetricCard icon={<Wallet size={14}/>} label="Installation cost range" value={`${money(result.installationCostRangeUsd.low)}–${money(result.installationCostRangeUsd.high)}`} foot="Illustrative · not a quote" help="Local installer quotes may differ materially."/>
+            <MetricCard icon={<ArrowDownRight size={14}/>} label="Simple payback" value={result.paybackYears === null ? "Not reached" : `${result.paybackYears.toFixed(1)} yrs`} foot={`Model horizon: ${result.projectionHorizonYears} years`} help="Financing and ongoing costs are excluded."/>
+            <MetricCard icon={<Leaf size={14}/>} label="Avoided emissions" value={`${(result.co2AvoidedKg / 1000).toFixed(2)} t CO₂`} foot="Generic factor · estimated annually" help="Not a lifecycle assessment or measured impact."/>
+          </div></details>
 
           <section className="feasibility-banner" aria-live="polite"><div className="feasibility-icon"><ChartNoAxesCombined size={17}/></div><div><strong>{result.roofLimited ? "Roof area constrains the modeled system" : "Roof area does not constrain this modeled size"}</strong><p>Usable roof capacity {result.roofCapacityKw.toFixed(1)} kW · estimated system {result.systemKw.toFixed(1)} kW. This estimate does not assess roof structure, code, permitting, or actual shade.</p></div><span className="estimate-only">EARLY ESTIMATE</span></section>
 
-          <section className="dashboard-chart-grid" aria-label="Solar estimate charts"><GenerationChart rows={result.annualProjection}/><SavingsChart data={chartData}/></section>
-          <section className="dashboard-chart-grid secondary-chart-grid" aria-label="Cost and production profile"><CostRecoveryChart result={result}/><MonthlyProfileNotice/></section>
+          <section className="dashboard-primary-chart" aria-label="Estimated generation and consumption"><GenerationChart rows={result.annualProjection}/></section>
+          <AccordionGallery/>
+          <section className="dashboard-savings-section" aria-label="Estimated savings"><div className="dashboard-section-heading"><div><p className="eyebrow">What it could mean for your bill</p><h2>Estimated savings over time</h2><p>Modeled solar savings and remaining utility bill · USD per year</p></div></div><SavingsChart data={chartData}/></section>
 
-          <ScenarioComparison activeId={activeScenario} onSelect={chooseScenario} currentResult={result}/>
+          <details className="dashboard-disclosure" id="scenario-details"><summary>Compare illustrative scenarios</summary><ScenarioComparison activeId={activeScenario} onSelect={chooseScenario} currentResult={result}/></details>
 
-          <div className="results-detail-grid"><AssumptionsPanel inputs={modelInputs} result={result} context={shownContext} scenarioName={scenarioName} demoMode={illustrativeDemo}/><RecommendationsPanel inputs={modelInputs} result={result} context={shownContext}/></div>
+          <section className="dashboard-next-steps"><RecommendationsPanel inputs={modelInputs} result={result} context={shownContext}/></section>
+          <details className="dashboard-disclosure" id="assumptions-details"><summary>Review assumptions, data quality and limitations</summary><AssumptionsPanel inputs={modelInputs} result={result} context={shownContext} scenarioName={scenarioName} demoMode={illustrativeDemo}/></details>
+          <details className="dashboard-disclosure" id="cost-details"><summary>Explore cumulative savings and cost recovery</summary><CostRecoveryChart result={result}/><MonthlyProfileNotice/></details>
 
-          <div className="dashboard-lower-grid"><EstimateForm inputs={inputs} errors={errors} onChange={changeField} onReset={reset} onValidate={() => { if (assessment.validate()) flash("Estimate recalculated using your current assumptions"); }}/><AssessmentAssistant key={assistantRevision} inputs={modelInputs} result={result} scenarioName={scenarioName} context={shownContext} scenarios={assistantScenarios}/></div>
+          <div className="dashboard-lower-grid"><EstimateForm inputs={inputs} errors={errors} onChange={changeField} onReset={reset} onValidate={() => { if (assessment.validate()) flash("Estimate recalculated using your current assumptions"); }}/><details className="dashboard-disclosure assistant-disclosure"><summary>Ask the optional results assistant</summary><AssessmentAssistant key={assistantRevision} inputs={modelInputs} result={result} scenarioName={scenarioName} context={shownContext} scenarios={assistantScenarios}/></details></div>
           <p className="disclaimer" id="about">Planning estimates only. Demo data is illustrative and is not a verified tariff, live solar reading, subsidy, approval, engineering assessment, or guarantee. Confirm assumptions with your utility and a qualified local installer.</p>
         </>}
       </div>

@@ -36,10 +36,12 @@
     ".next-build-final/types/**/*.ts",
     ".next-build-ready/types/**/*.ts",
     ".next-build-release/types/**/*.ts",
+    ".next-build-solarfix/types/**/*.ts",
+    ".next-build-webthreads/types/**/*.ts",
     ".next-build/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-build-presentation/types/**/*.ts"
+    ".next-dev-live/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

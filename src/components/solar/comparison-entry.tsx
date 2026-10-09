@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ComparisonExperience } from "@/components/solar/comparison-experience";
-import { LoadingIndicator } from "@/components/ui";
+import { PageLoading } from "@/components/ui/page-loading";
 import { validateInputs, type SolarInputs } from "@/lib/solar";
 
 type Handoff = { inputs: SolarInputs; name: string; sourceLabel: string; tariffWasAssumed: boolean };
@@ -26,5 +26,5 @@ export function ComparisonEntry() {
     } catch { /* A malformed local handoff safely falls back to the built-in demo. */ }
     setReady(true);
   }, []);
-  return ready ? <ComparisonExperience baseInputs={handoff?.inputs} baseName={handoff?.name} baseSourceLabel={handoff?.sourceLabel ?? "Built-in illustrative demo values"} tariffWasAssumed={handoff?.tariffWasAssumed ?? true}/> : <main className="comparison-loading"><LoadingIndicator label="Preparing local scenario comparison"/></main>;
+  return ready ? <ComparisonExperience baseInputs={handoff?.inputs} baseName={handoff?.name} baseSourceLabel={handoff?.sourceLabel ?? "Built-in illustrative demo values"} tariffWasAssumed={handoff?.tariffWasAssumed ?? true}/> : <PageLoading kind="comparison"/>;
 }

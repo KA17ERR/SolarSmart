@@ -8,12 +8,13 @@ export function SiteFooter() {
   const pathname = usePathname();
   const inAssessment = pathname.startsWith("/assessment");
   const inComparison = pathname.startsWith("/assessment/compare");
+  const onHome = pathname === "/";
   const [hasDashboard, setHasDashboard] = useState(false);
   useEffect(() => { setHasDashboard(Boolean(document.getElementById("dashboard"))); }, [pathname]);
-  const home = inAssessment ? "/#home" : "#home";
+  const home = onHome ? "#home" : "/#home";
   const assessment = inComparison ? "/assessment#estimate" : inAssessment ? hasDashboard ? "#estimate" : "#solar-assessment" : "/assessment#estimate";
-  const howItWorks = inAssessment ? "/#how-it-works" : "#how-it-works";
-  const about = inAssessment ? "/#about" : "#about";
+  const howItWorks = onHome ? "#how-it-works" : "/#how-it-works";
+  const about = onHome ? "#about" : "/#about";
   return <footer className="site-footer">
     <div className="site-footer-inner">
       <div className="footer-brand"><a className="site-brand footer-mark" href={home}><span className="site-brand-mark"><Sun size={17} aria-hidden="true"/></span><span>Solar<span className="site-brand-light">Smart</span></span></a><p>Clear early estimates for a brighter energy decision.</p></div>

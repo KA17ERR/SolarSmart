@@ -1,0 +1,58 @@
+.web-threads-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.web-threads-global {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 72% 18%, rgb(86 58 151 / 17%), transparent 42%),
+    radial-gradient(ellipse at 18% 76%, rgb(47 43 100 / 18%), transparent 45%),
+    linear-gradient(145deg, #090810 0%, #07070d 55%, #0a0912 100%);
+}
+
+.web-threads-global canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.web-threads-global.web-threads-fallback {
+  background:
+    radial-gradient(ellipse at 74% 24%, rgb(119 89 198 / 20%), transparent 42%),
+    radial-gradient(ellipse at 30% 72%, rgb(79 69 143 / 18%), transparent 48%),
+    linear-gradient(145deg, #090810 0%, #07070d 55%, #0a0912 100%);
+}
+
+.web-threads-global.web-threads-fallback::after {
+  position: absolute;
+  inset: 18% -15% 18%;
+  content: "";
+  opacity: 0.42;
+  background: repeating-radial-gradient(ellipse at 50% 50%, transparent 0 23px, rgb(187 163 255 / 18%) 24px 25px, transparent 26px 39px);
+  transform: rotate(-8deg);
+}
+
+.solar-sunlight-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 74% 23%, rgb(255 203 128 / 13%), transparent 25%),
+    linear-gradient(125deg, transparent 33%, rgb(84 178 221 / 6%) 52%, transparent 71%);
+  opacity: calc(0.95 - var(--scene-progress, 0) * 0.42);
+  transition: opacity 220ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solar-sunlight-overlay { transition: none; }
+}

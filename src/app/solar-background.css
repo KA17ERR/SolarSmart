@@ -1,0 +1,79 @@
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 12% 24%, rgb(80 57 145 / 14%), transparent 36%),
+    radial-gradient(ellipse at 87% 74%, rgb(32 112 142 / 10%), transparent 33%),
+    #07070d;
+}
+
+.solar-app-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* Global stage stays visible through page shells; data-heavy components retain opaque surfaces. */
+.app-shell,
+.app-shell.landing-shell,
+.main,
+.main.planner-main,
+.main.account-main,
+.main.auth-main,
+.comparison-loading,
+.solar-story,
+.solar-scene-pin,
+.assessment-flow-shell {
+  background-color: transparent;
+}
+.solar-scene-pin { background: transparent; }
+
+/* Semantic accent usage: blue for primary actions, cyan for interactive energy, amber for solar. */
+.ui-input:focus { border-color: var(--color-primary); box-shadow: var(--focus-ring); }
+.planner-progress progress, .ui-progress { accent-color: var(--color-primary-action); }
+.roof-panel-tile rect { fill: #176c9d; stroke: #8bd8e3; }
+.roof-panel-tile:hover rect, .roof-panel-tile:focus rect { fill: #1686a8; filter: drop-shadow(0 0 6px #9ce4ea); }
+.roof-panel-tile.panel-selected rect { fill: #d09343; }
+.roof-grid-stage { position: relative; transform-origin: center; transition: transform .22s ease; }
+.roof-orientation-marker { position: absolute; z-index: 2; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgb(203 227 240 / 22%); border-radius: 4px; background: rgb(8 19 34 / 82%); padding: 5px 7px; color: #d7edf6; font-size: 10px; text-transform: capitalize; pointer-events: none; }
+.comparison-loading { background: transparent; }
+.solar-story { background: transparent; }
+.home-closing { background: rgb(12 33 53 / 91%); }
+
+/* Route loading surfaces mirror the page structure without flashing white. */
+.route-loading { position: relative; min-height: 70vh; padding: clamp(24px, 5vw, 60px) var(--layout-gutter); background: transparent; }
+.route-loading-inner { width: min(100%, 1180px); margin: 0 auto; }
+.route-loading-heading { display: grid; gap: 13px; margin-bottom: 26px; }
+.route-loading-eyebrow { width: 130px; height: 11px; }
+.route-loading-title { width: min(520px, 78vw); height: 42px; }
+.route-loading-copy { width: min(690px, 88vw); height: 17px; }
+.route-loading-content { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(230px, .65fr); gap: 16px; }
+.route-loading-primary,.route-loading-aside { display: grid; align-content: start; gap: 14px; }
+.route-loading-toolbar { height: 58px; }
+.route-loading-panel { min-height: 250px; border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); }
+.route-loading-short { min-height: 122px; }
+.route-loading-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.route-loading .ui-skeleton { background: linear-gradient(100deg, rgb(255 255 255 / 3%) 20%, rgb(177 158 255 / 13%) 48%, rgb(255 255 255 / 3%) 76%); background-size: 220% 100%; }
+
+.web-threads-container.web-threads-global {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .web-threads-global { width: 100vw; height: 100svh; }
+  .route-loading-content { grid-template-columns: 1fr; }
+  .route-loading-panel { min-height: 210px; }
+}
+
+@media print {
+  .web-threads-container { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roof-grid-stage { transition: none; }
+  .route-loading .ui-skeleton { animation: none; background: rgb(177 158 255 / 10%); }
+}

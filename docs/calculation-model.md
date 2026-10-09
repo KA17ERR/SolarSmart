@@ -16,6 +16,7 @@ The calculation module is pure TypeScript. It imports no UI, React, network, AI,
 | `usableRoofPercent` | percent | Remaining roof area after setbacks and obstructions. |
 | `orientationFactor`, `shadingFactor` | fraction 0–1 | User/demo production multipliers. |
 | `targetAnnualOffsetRate` | fraction 0–1 | Sizing goal; **not** the fraction of generated energy consumed on site. |
+| `systemCapacityTargetKw` (optional) | kW | Explicit system-size target used by layout tools such as the interactive planner. It cannot exceed the roof-capacity limit. When omitted, capacity is sized from annual consumption and the offset target. |
 | `exportCompensationRate` | USD/kWh | User supplied export credit; zero by default unless known. |
 | `systemCost` | USD | User or demo expected installed price, not a quote. |
 | `incentiveRate` | fraction 0–0.9 | Optional explicit user assumption, default 0; never verified or guaranteed. |
@@ -45,7 +46,7 @@ Every constant has a plain-language source note in the assumptions snapshot. Cal
 1. **Consumption:** use explicit `annualConsumptionKwh` when supplied; otherwise infer `monthlyBill × 12 ÷ utilityRate`. Scenario comparison copies that inferred base usage into the optional field, so changing a tariff does not silently alter the assumed kWh load. The comparison editor recomputes the implied monthly bill as annual use × retail rate ÷ 12 when either of those scenario values changes.
 2. **Annual yield per kW:** `sunHours × 365 × performanceRatio × orientationFactor × shadingFactor`.
 3. **Roof capacity:** `roofAreaSqFt × usableRoofPercent ÷ 100 ÷ roofAreaSqFtPerKw`.
-4. **Requested capacity:** `annualConsumptionKwh × targetAnnualOffsetRate ÷ annualYieldPerKw`.
+4. **Requested capacity:** use `systemCapacityTargetKw` when supplied; otherwise `annualConsumptionKwh × targetAnnualOffsetRate ÷ annualYieldPerKw`.
 5. **Installed capacity:** lesser of requested capacity and roof capacity. Roof area is a planning constraint, not a structural suitability assessment.
 6. **Annual generation:** `installed kW × annual yield per kW`.
 7. **On-site energy:** lesser of `generation × physicalSelfConsumptionRate` and annual consumption. **Exports:** generation minus on-site energy.

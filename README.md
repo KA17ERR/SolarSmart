@@ -14,7 +14,7 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The home page introduces the estimate, shows a computed sample preview, and links to a real sample report and the assessment at `/assessment`. The no-query assessment route opens the four-step property wizard; completing it opens the dashboard with submitted inputs. `/assessment?scenario=balanced` opens the built-in medium-roof dashboard demo directly. The core demo makes no external requests, uploads, or credential checks.
+Open [http://localhost:3000](http://localhost:3000). The home page is a three-viewport pinned scene: scroll progress smoothly guides the same solar home through daylight, evening storage, and night use. **Build My Solar** opens `/planner`, a six-step local roof and energy planner with optional illustrative battery runtime. The planner works locally with sample/manual location; an optional OpenStreetMap street map can be loaded by user action. `/assessment` keeps the established property wizard; `/assessment?scenario=balanced` opens the built-in medium-roof dashboard demo directly. The standard demo makes no external requests or uploads unless the user explicitly loads the map or searches for a location.
 
 To build and serve the production version locally:
 
@@ -27,25 +27,46 @@ The production server defaults to port 3000. For a different port, set `PORT` in
 
 ## Demo walkthrough
 
-Start from **Check My Solar Potential** or **Try sample data** in the wizard. Enter a general city/postcode, property and roof details, and either a monthly bill or kWh consumption. Review or edit each section before calculating. Roof area supports sq ft and m²; unknown tariffs and orientation use disclosed generic assumptions. **Restart** clears the wizard, while **Cancel** returns home. Calculation opens the dashboard with the entered roof, shading, orientation, rate, and energy values mapped into the same deterministic model. The dashboard’s **Edit assessment** returns to the reviewed wizard inputs. Use **Compare scenarios** to open a dedicated decision-support workspace: keep the assessment as the fixed baseline, create/rename/duplicate/remove alternatives, adjust assumptions, and export a side-by-side report. The comparison pins baseline annual kWh (inferred from bill and tariff if no explicit use was collected), so a tariff what-if changes price without silently changing consumption. **Reset samples** restores the three alternatives; **Reset comparison** also resets the local comparison state. The separate sample scenario routes remain available; **Reset demo** restores dashboard defaults. The Report panel provides text/CSV exports, browser printing, and optional local history. **Ask about this assessment** uses the deterministic local assistant unless you deliberately configure a server-side Strands service.
+Start at the landing page’s **Build My Solar** CTA or use the six-step `/planner` experience. Choose a sample home, enter approximate rectangular roof dimensions, choose and place demo panels, then enter monthly kWh directly, infer it from a monthly bill and your tariff, or make a rough watts-and-hours appliance estimate. Optionally inspect a 5 or 10 kWh battery runtime illustration, then review assumptions before calculating. The roof grid uses panel dimensions, gaps, and edge clearances from `src/lib/panel-layout.ts`; activate a panel to remove that exact module, or restore the layout. Battery runtime is divided by the average household load; battery price and its effect on savings are deliberately excluded. Solar scenarios use the same deterministic engine as the dashboard. **Use Demo Home** and **Reset to demo values** restore the example. The optional online street map supports place search, panning, zooming, and approximate marker adjustment; it does not identify a building, provide satellite imagery, or measure a roof. Manual dimensions remain the source of roof size. **Print / save as PDF** opens the browser print dialog for the current planner report.
+
+The established `/assessment` flow remains available. Enter a general city/postcode, property and roof details, and either a monthly bill or kWh consumption. Review or edit each section before calculating. Roof area supports sq ft and m²; unknown tariffs and orientation use disclosed generic assumptions. **Restart** clears the wizard, while **Cancel** returns home. Calculation opens the dashboard with the entered roof, shading, orientation, rate, and energy values mapped into the same deterministic model. The dashboard’s **Edit assessment** returns to the reviewed wizard inputs. Use **Compare scenarios** to open a dedicated decision-support workspace: keep the assessment as the fixed baseline, create/rename/duplicate/remove alternatives, adjust assumptions, and export a side-by-side report. The comparison pins baseline annual kWh (inferred from bill and tariff if no explicit use was collected), so a tariff what-if changes price without silently changing consumption. **Reset samples** restores the three alternatives; **Reset comparison** also resets the local comparison state. The separate sample scenario routes remain available; **Reset demo** restores dashboard defaults. The Report panel provides text/CSV exports, browser printing, and optional local history. **Ask about this assessment** uses the deterministic local assistant unless you deliberately configure a server-side Strands service.
 
 At tablet widths the header collapses to an accessible menu; at phone widths scenario cards and the footer stack, while metric cards remain in a two-column grid. Navigation links jump to real page sections. No external imagery, account, or remote service is needed for the walkthrough.
 
 ### Three-minute judge presentation
 
 1. **Frame the problem:** Rooftop solar decisions involve roof suitability, system size, energy use, utility rates, installation cost, savings, and payback. These are difficult to reason about when assumptions are scattered or hidden.
-2. **Introduce the solution:** Open the landing page. Point out the sample preview, prominent assessment action, and estimate-only / demo labels. Explain that a city or postcode is context only; the app does not look up a home or pretend to have live solar data.
-3. **Run an assessment:** Choose **Check My Solar Potential**, then **Try sample data**. Review the property and roof, energy input, preferences, and final review; edit a value to show the wizard preserves inputs. Submit to open the results dashboard.
-4. **Explain the result:** Walk through modeled capacity, annual generation, bill savings, illustrative cost range, payback availability, and estimated avoided emissions. Show source-labelled inputs and assumptions, limitations, and deterministic next steps.
-5. **Compare decisions:** Choose **Compare scenarios**. Select or edit a small-roof or shaded alternative and show the shared calculator updating deltas. Mention when a preset changes multiple assumptions, so the result cannot be attributed to one cause.
-6. **Show transparency and optional help:** Review the calculation assumptions and ask a suggested question. With no model endpoint configured, the assistant uses its deterministic local answer; if a model is deliberately configured, it can provide qualitative explanation while SolarSmart's calculation engine remains the source of every number.
-7. **Close with a report and architecture:** Open **Report**, show that values match the dashboard, and use text/CSV export or browser print. Explain that reports, calculator, demo scenarios, and local history do not need AWS; the SAM API is an optional server-side enhancement.
+2. **Introduce the solution:** Open the landing page. Point out the scroll-linked sun-to-home energy story, the sample preview, and clear local-demo labels. Explain that a city or postcode is context only; the planner does not look up a home or pretend to have live solar data.
+3. **Build a plan:** Select **Build My Solar**, use the demo home, edit a roof dimension or shading, and remove a specific panel. Enter or retain the sample energy use and review the live engine-backed summary.
+4. **Explore alternatives:** Calculate the plan and choose a conservative, current, or roof-constrained scenario. Show how panel layout, capacity, generation, savings, cost, and payback move together.
+5. **Open the results dashboard:** Go to the established sample assessment to show detailed charts, assumptions, recommendations, local assistant fallback, report, and scenario comparison. Explain that the calculator remains the sole numerical authority.
+6. **Close with a report and architecture:** Print the planner or use the dashboard report export. Explain that the planner, calculator, demo scenarios, and local history do not need AWS; the SAM API is an optional server-side enhancement.
 
-For a fast judge path, start at `/`, click **Check My Solar Potential**, choose **Try sample data**, submit, select a comparison scenario, then open **Report**. **Reset demo** returns the dashboard to its intended medium-roof sample; **Restart** clears the wizard.
+For a fast judge path, start at `/`, click **Build My Solar**, keep the demo home, inspect the panel grid, and calculate. Then open `/assessment?scenario=balanced#dashboard` for the full result dashboard and comparison/report flow. **Reset to demo values** restores the planner example; **Reset demo** restores the dashboard sample.
 
 ### Product choices and what is distinctive
 
 SolarSmart's useful distinction is the flow from an approachable intake to traceable estimates: the wizard, editable scenarios, dashboard, recommendations, and export all use one deterministic calculation contract. It separates entered values, model assumptions, calculated facts, and unknowns in the UI. The scenario workspace makes trade-offs visible while warning when several variables change together. Optional AI explains a structured summary only; it cannot become a second financial calculator. This is a product and architecture choice, not a claim of a new scientific solar model or proven user outcome.
+
+The landing page uses a locally bundled, matched day/sunset/night architectural image sequence with a stable camera composition. One normalized scroll-progress value crossfades the frames without a React render loop or 3D runtime; reduced-motion mode provides keyboard-accessible Day/Evening/Night controls. The generated visual is illustrative, not a verified property or solar installation. The local planner separates roof-grid geometry (`src/lib/panel-layout.ts`) from energy and financial estimation (`src/lib/solar.ts` and `src/lib/planner.ts`). Displayed panel dimensions, regional factors, currency, battery runtime, and costs are illustrative defaults, not vendor or market specifications. See [planner model and assumptions](docs/planner-model.md).
+
+## Optional accounts and project storage
+
+The full planner and assessment remain usable with all Supabase variables blank. If you deliberately configure a Supabase project, `/login`, `/signup`, `/forgot-password`, and `/dashboard` enable provider-managed authentication and per-user saved solar projects. A project save is explicit: the server validates inputs and recalculates results using SolarSmart’s engine before writing the project and related roof, system, and assessment records. Open a saved project and choose **Continue editing this plan** to reopen its validated planner inputs; edits are marked unsaved until **Update saved project** succeeds. Email, roof photos, and passwords are not written to SolarSmart project tables; Supabase Auth alone processes passwords. The frontend uses only the Supabase publishable/anon key, and database access is restricted by RLS policies.
+
+1. Create a Supabase project yourself and review its current pricing, data region, quotas, and retention requirements. SolarSmart does not create a project automatically.
+2. Copy `.env.example` to `.env.local`; set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the older `NEXT_PUBLIC_SUPABASE_ANON_KEY`), and `NEXT_PUBLIC_SITE_URL`. The publishable/anon key is intended for browser use only with Row Level Security enabled. Never use a service-role key in this app or expose one through `NEXT_PUBLIC_*`.
+3. Apply both SQL migrations with the Supabase CLI after linking the project, for example `npx supabase link --project-ref YOUR_PROJECT_REF` followed by `npx supabase db push`. Review the SQL and target project before applying. Alternatively, run `202610090001_initial_schema.sql` followed by `202610090002_atomic_project_save.sql` in the Supabase SQL editor.
+4. In Supabase Auth settings, configure the allowed site URL and redirect URL `http://localhost:3000/auth/callback` for local development; set the corresponding HTTPS URL in production. Configure email delivery and password/recovery policy in Supabase.
+5. Restart `npm run dev`. Check sign-up email confirmation, sign-in, recovery, project save, RLS-protected listing, rename, detail, delete, and sign-out using test accounts.
+
+The included migration creates private profiles, solar projects, roof/system configuration, energy assessment, and report metadata tables with foreign keys, indexes, and owner policies. Report metadata is not written automatically; downloaded reports stay local. Deleting a project cascades to its related records. The optional Supabase integration has not been connected to or verified against a live project. Requests, database size, email delivery, backups, and hosting can incur charges; check current Supabase pricing and limits.
+
+## Optional planner map
+
+The planner has a genuine Leaflet/OpenStreetMap street map, but it is opt-in: the user must select **Load online map** before the browser contacts the tile service. Place search sends the entered query to public Nominatim only after the user presses **Search**. Selecting a result recenters the map; the marker can then be dragged or moved by clicking, and **Confirm location** copies its human-readable label into the plan. Device geolocation is never requested. When offline or unavailable, the sample marker and manual roof inputs remain usable. This is a location aid, not rooftop imagery or measurement.
+
+The default OSM tile and Nominatim endpoints require internet access, attribution, and fair-use compliance. Public services can rate-limit or deny requests and are not a guaranteed production backend. Read the current [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/) and [Nominatim policy](https://operations.osmfoundation.org/policies/nominatim/) before use. For a public deployment, configure an appropriately licensed, production-grade provider with `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_GEOCODER_URL` in `.env.local`; these values are public endpoints, not secrets. Avoid sending precise addresses unless necessary. No satellite layer is offered, and selected city/postcode coordinates do not prove a rooftop location.
 
 Future extensions could add validated location-specific weather and tariff sources, installer quote comparison, account-based syncing, or a tested vision method. Each would need disclosed provenance, user consent, security and retention design, and a comparison against the current deterministic assumptions before it could replace or augment demo inputs. None is represented as implemented today.
 
@@ -66,7 +87,7 @@ The results dashboard includes six summary metrics, an engine-backed annual gene
 ## Known limitations
 
 - Solar yield, emissions factor, equipment performance, and default financial inputs are generic planning assumptions, not a local forecast, live measurement, quote, or verified tariff.
-- A city/postcode is not geocoded. Roof images are only previewed locally; there is no vision service or dimension measurement.
+- The optional map geocodes only after user action; map availability depends on public-service policies and connectivity. Roof images are only previewed locally; there is no vision service or dimension measurement.
 - The model does not inspect roof structure, wiring, permitting, legal eligibility, utility approvals, or installer quality. A qualified local professional must assess those conditions.
 - Savings and simple payback exclude financing, maintenance, insurance, taxes, fixed utility charges, and changing export terms. No subsidy is assumed by default; any user-entered incentive remains unverified.
 - Local history and comparison handoff data remain in the current browser and do not sync across devices. Browser storage settings may clear or block saved history.
@@ -87,21 +108,28 @@ The first four commands check the Next.js app, TypeScript, and frontend tests. T
 ## Technology stack and rationale
 
 - **Next.js App Router + React + TypeScript:** typed page routing, server/client boundaries, and a maintainable UI without requiring a separate hosted API for the local experience.
+- **OGL (decorative WebThreads background):** provides the existing optional WebGL thread effect with a CSS gradient fallback. Homepage photography and the planner do not depend on WebGL.
+- **Locally bundled generated scene frames:** matched architectural day, evening, and night visuals are crossfaded on scroll. No image host, image API, or external asset request is required.
 - **Tailwind CSS / repository CSS design tokens:** utility styling plus shared semantic colors, spacing, focus states, and responsive rules. The reusable controls in `src/components/ui` are accessible project components; shadcn/ui is not a runtime dependency.
+- **Leaflet + OpenStreetMap (optional user-triggered feature):** provides a real pannable street map and approximate marker selection without an API key. It is not required for core estimates and remains dependent on external fair-use services.
 - **Recharts:** responsive charts receive the calculation engine's projection data. They do not make independent solar or financial calculations.
 - **Vitest:** fast unit tests for deterministic calculations, validation, comparison, reports, persistence, assistant contracts, and image handling.
 - **Python 3.12 + AWS SAM + optional Strands Agents:** only for the optional serverless explanation API. It is not required to run, test, or build the core Next.js experience.
 
-No remote image host, font service, analytics provider, database, or AI client SDK is required by the browser demo.
+No remote image host, font service, analytics provider, database, or AI client SDK is required by the browser demo. The WebThreads background renders locally and the architectural scene frames are bundled in `public/images`.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Page[Next.js App Router dashboard] --> UI[Reusable estimate form, metrics, scenario cards]
+  Page[Next.js App Router] --> Landing[Short landing + scroll-crossfaded architectural scene]
+  Landing --> Planner[Local guided rooftop planner]
+  Planner --> Geometry[Pure panel layout geometry]
+  Planner --> Calc[Pure solar calculation module]
+  Page --> UI[Reusable estimate form, metrics, scenario cards]
   UI --> State[useAssessment state hook]
   State --> Validation[Typed input validation]
-  Validation --> Calc[Pure solar calculation module]
+  Validation --> Calc
   Calc --> Charts[Recharts views]
   Calc --> Compare[Typed scenario evaluation]
   Compare --> ComparePage[Editable comparison workspace]
@@ -117,21 +145,26 @@ flowchart LR
   API --> Lambda[Optional SAM Lambda]
   Lambda -. STRANDS_ENABLED .-> Strands[Strands Agent · qualitative explanation only]
   Lambda -. disabled / error .-> Fallback
+  Planner --> SaveAction[Explicit server save action]
+  SaveAction --> SupaAuth[Optional Supabase Auth]
+  SaveAction --> SupaDb[(Optional Postgres with RLS)]
+  SupaAuth --> SupaDb
 ```
 
-Component boundaries: `src/app/page.tsx` composes the landing page; `src/app/assessment/page.tsx` routes between the wizard and optional scenario demo; `src/components/solar/assessment-wizard.tsx` owns the step UI and review, `src/lib/assessment.ts` defines and validates its separate raw-data model and adapter, and `src/components/solar/assessment-flow.tsx` hands validated inputs into `src/components/solar/assessment-dashboard.tsx`. `src/app/assessment/compare/page.tsx` and `src/components/solar/comparison-experience.tsx` provide CRUD scenario comparison; `src/lib/comparison.ts` evaluates each variant with the existing pure solar engine and builds safe absolute/relative differences; `src/lib/comparison-storage.ts` uses one-time session storage only for the browser handoff. See [scenario comparison design](docs/scenario-comparison.md). `src/components/ui` provides design-system controls; `src/hooks/use-assessment.ts` owns local calculation/dashboard state; `src/lib/validation.ts` validates calculator inputs; `src/lib/solar.ts` computes results; `src/lib/scenarios.ts` contains fictional demo data; `src/lib/ai/fallback.ts` and `src/lib/services/explanation-client.ts` handle optional explanation; `src/lib/report.ts` formats reports. The core app has no cloud data-access dependency. Never move private credentials into `NEXT_PUBLIC_*` variables or frontend bundles.
+Component boundaries: `src/app/layout.tsx` mounts one persistent `GlobalBackground` (`src/components/solar/global-background.tsx`) for every route. It reuses the OGL-based `WebThreads` renderer (`web-threads.tsx`, `WebThreads.css`) behind readable page shells. The landing page uses `solar-story.tsx` to drive the matched local images in `public/images/solar-home-*.png` through `cinematic-solar-scene.tsx`; no 3D renderer or WebGL is needed for the house scene. Semantic design tokens live in `src/app/design-system.css`; dark glass surfaces, palette, and route-level contrast adjustments live in `src/app/globals.css`. `src/app/page.tsx` composes the landing; `src/app/planner/page.tsx` and `src/components/solar/solar-planner.tsx` handle the guided home/roof/panels/energy/battery/review flow; `src/lib/panel-layout.ts` and `src/lib/planner.ts` handle panel geometry and planner estimates. The solar financial authority remains `src/lib/solar.ts`. Optional server authentication lives in `src/lib/supabase`, `src/app/auth-actions.ts`, and the migration in `supabase/migrations`; `src/app/project-actions.ts` revalidates and recalculates before explicit account persistence. The established assessment wizard, dashboard, comparisons, reports, and assistant remain separate modules.
 
 ## Delivery status
 
-Implemented: local multi-step rooftop assessment wizard with review/edit/restart, deterministic roof and savings estimate, validation, demo scenario comparison/reset, savings chart, question-aware deterministic assistant, optional server-side Strands integration, current-result text/CSV/print report, opt-in versioned local assessment history, and responsive accessible dashboard.
+Implemented: compact pinned solar story with photorealistic illustrative day/evening/night image compositing, scroll-controlled transitions, and reduced-motion controls; six-step local rooftop planner with proportional panel geometry, selectable modules, live scenarios, and optional average-load battery illustration; optional Supabase authentication actions, recovery flow, owner-scoped project save/list/detail/rename/delete, and an RLS migration; existing assessment wizard/dashboard, deterministic engine, comparison, local assistant fallback, reports, and local history.
 
-Not wired because the local-first demo does not need them: user accounts/Cognito, persistent cloud scenarios, S3 report/image storage, DynamoDB records, CloudFront hosting, live tariff/irradiance feeds, address lookup, or automated installer matching. The optional SAM template does provision a bounded-retention CloudWatch log group for its assistant Lambda. No partnerships, government data, or subsidy database are claimed. Add other services only for a demonstrated need, with a verified data source, privacy review, and explicit opt-in configuration.
+Not configured or live-tested: Supabase authentication/database (requires a user-owned project, applying the migration, email settings, and environment values), Strands/Bedrock inference, AWS deployment, map/location lookup, live tariff/irradiance feeds, automated imagery analysis, or installer matching. No resources are deployed automatically. No partnerships, government data, or subsidy database are claimed.
 
 ### Implemented versus prepared integrations
 
 | Integration | Current status |
 | --- | --- |
 | Local Next.js UI, wizard, calculation engine, sample data, charts, comparison, report, local history | Implemented; does not need AWS credentials or network access at runtime. |
+| Supabase Auth/Postgres | Optional auth flows and RLS schema are implemented; requires a user-owned project and applying the migration. No live Supabase project was available for integration verification. |
 | Strands explanation endpoint | Optional server-side Lambda/API integration is implemented in `backend/app.py` and `template.yaml`; defaults disabled and has deterministic fallback. Model inference was not verified as part of the local demo. |
 | AWS Lambda, API Gateway, CloudWatch | Included in the optional SAM assistant stack. SAM template validation/deployment status depends on running SAM and reviewing the target account's change set; no resources are deployed automatically. |
 | S3 user uploads/report storage, DynamoDB, Cognito, CloudFront | Future integration points only. No adapters, application flows, or resources for these services are implemented. |
@@ -172,6 +205,7 @@ Deployment is never part of local setup. The only included cloud backend is the 
 - User inputs stay in browser state unless the user explicitly saves an assessment. Optional history stores only assessment inputs/context in this browser’s local storage; it does not sync and includes no roof images. Use **Delete all local history** in the History panel to remove it. Browser privacy settings may block or clear storage.
 - Report text/CSV exports are generated client-side. Browser print can be used to save a PDF; no remote PDF service is used. Export actions report a failure if browser download/print setup throws; the browser controls the final save location.
 - If install fails, check Node.js 20+ and rerun `npm install`. If port 3000 is busy, run `npm run dev -- -p 3002`.
+- If a production build in a OneDrive-synced folder fails with an `EINVAL`/`readlink` error under `.next-build-solarfix`, retry into a fresh ignored output directory in PowerShell: `$env:SOLARSMART_NEXT_DIST_DIR = ".next-build-retry"` then `npm run build`. Choose a new directory name if that output also contains stale OneDrive metadata. This changes only Next.js build output; it does not alter source files or the development server.
 - If a chart is blank, reload and confirm JavaScript is enabled. The calculator outputs are available without charts.
 - If SAM local startup fails, install Docker and SAM CLI; otherwise simply skip the optional API.
 - If optional Strands fails due to missing model permissions, region, or credentials, disable it and retain the fallback. Model calls may be billable.

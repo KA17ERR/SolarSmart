@@ -11,6 +11,8 @@ export type SolarInputs = {
   electricityEscalation: number;
   /** Sizing target: share of annual consumption the system is intended to serve. */
   targetAnnualOffsetRate: number;
+  /** Optional direct sizing target for a selected panel layout; takes precedence over the consumption-offset target. */
+  systemCapacityTargetKw?: number;
   /** Compensation for exported energy. Defaults to zero because export rules are unknown. */
   exportCompensationRate: number;
   roofAreaSqFt: number;
@@ -59,6 +61,11 @@ export const DEFAULT_CALCULATION_ASSUMPTIONS: CalculationAssumptions = {
     gridEmissionsKgCo2PerKwh: "Generic illustrative grid factor; not location-specific.",
   },
 };
+
+/** Generic annual kWh per kW model; input factors are assumptions, never live measurements. */
+export function estimatedAnnualYieldPerKw(input: Pick<SolarInputs, "sunHours" | "orientationFactor" | "shadingFactor">, assumptions: Pick<CalculationAssumptions, "systemPerformanceRatio"> = DEFAULT_CALCULATION_ASSUMPTIONS): number {
+  return input.sunHours * 365 * assumptions.systemPerformanceRatio * input.orientationFactor * input.shadingFactor;
+}
 
 export type AnnualProjection = {
   year: number;
@@ -154,6 +161,7 @@ function validateInputIssues(input: Partial<SolarInputs>): ValidationIssue[] {
     ["incentiveRate", "Incentive assumption must be between 0% and 90%.", value => value < 0 || value > 0.9],
     ["electricityEscalation", "Annual bill increase must be between 0% and 20%.", value => value < 0 || value > 0.2],
     ["targetAnnualOffsetRate", "Target annual offset must be between 0% and 100%.", value => value < 0 || value > 1],
+    ["systemCapacityTargetKw", "Target system capacity must be between 0 and 1,000 kW.", value => value < 0 || value > 1000],
     ["exportCompensationRate", "Export compensation must be between 0 and 1,000 per kWh.", value => value < 0 || value > 1000],
     ["roofAreaSqFt", "Roof area must be between 0 and 1,000,000 square feet.", value => value < 0 || value > 1000000],
     ["usableRoofPercent", "Usable roof share must be between 0% and 100%.", value => value < 0 || value > 100],
@@ -223,19 +231,19 @@ export function estimateSolar(input: Partial<SolarInputs>, overrides: Partial<Ca
   const utilityRate = input.utilityRate;
   const monthlyBill = input.monthlyBill;
   const targetOffset = input.targetAnnualOffsetRate;
-  const factors = (input.orientationFactor ?? 1) * (input.shadingFactor ?? 1);
-  const annualYieldPerKw = sun === undefined ? null : sun * 365 * assumptions.systemPerformanceRatio * factors;
+  const annualYieldPerKw = sun === undefined ? null : estimatedAnnualYieldPerKw({ sunHours: sun, orientationFactor: input.orientationFactor ?? 1, shadingFactor: input.shadingFactor ?? 1 }, assumptions);
   const roofCapacity = area === undefined || usable === undefined ? null : (area * usable / 100) / assumptions.roofAreaSqFtPerKw;
   const annualConsumption = input.annualConsumptionKwh ?? (monthlyBill !== undefined && utilityRate !== undefined ? monthlyBill * 12 / utilityRate : null);
   let systemKw: number | null = null;
   if (roofCapacity !== null && annualConsumption !== null && annualYieldPerKw !== null && targetOffset !== undefined) {
     if (annualYieldPerKw === 0) systemKw = 0;
     else {
-      const requestedKw = annualConsumption * targetOffset / annualYieldPerKw;
+      const requestedKw = input.systemCapacityTargetKw ?? annualConsumption * targetOffset / annualYieldPerKw;
       systemKw = Math.min(requestedKw, roofCapacity);
     }
   }
-  const roofLimited = systemKw !== null && roofCapacity !== null && annualYieldPerKw !== null && annualYieldPerKw > 0 && systemKw < (annualConsumption! * targetOffset! / annualYieldPerKw);
+  const roofLimitedRequestKw = input.systemCapacityTargetKw ?? (annualConsumption !== null && targetOffset !== undefined && annualYieldPerKw !== null && annualYieldPerKw > 0 ? annualConsumption * targetOffset / annualYieldPerKw : null);
+  const roofLimited = systemKw !== null && roofCapacity !== null && roofLimitedRequestKw !== null && systemKw < roofLimitedRequestKw;
   const generation = systemKw !== null && annualYieldPerKw !== null ? systemKw * annualYieldPerKw : null;
   const consumptionSelfRate = assumptions.physicalSelfConsumptionRate;
   const selfConsumed = generation === null || annualConsumption === null ? null : Math.min(generation * consumptionSelfRate, annualConsumption);

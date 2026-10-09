@@ -1,0 +1,6 @@
+{
+  "/assessment/page": "app/assessment/page.js",
+  "/planner/page": "app/planner/page.js",
+  "/assessment/compare/page": "app/assessment/compare/page.js",
+  "/page": "app/page.js"
+}
