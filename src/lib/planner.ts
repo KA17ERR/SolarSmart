@@ -142,6 +142,11 @@ function makeSolarInputs(input: PlannerInputs, capacityKw: number, cost: number)
   };
 }
 
+/** Keep planner handoffs on the same capacity, yield, usage, tariff, and cost assumptions. */
+export function plannerInputsToSolarInputs(input: PlannerInputs, capacityKw: number): SolarInputs {
+  return makeSolarInputs(input, capacityKw, capacityKw * input.installedCostUsdPerKw);
+}
+
 function scenarioEstimate(input: PlannerInputs, panelCount: number, assumptions: SolarInputs): SolarEstimate {
   const capacityKw = panelCount * input.panelWatts / 1000;
   return estimateSolar({ ...assumptions, ...makeSolarInputs(input, capacityKw, capacityKw * input.installedCostUsdPerKw) });

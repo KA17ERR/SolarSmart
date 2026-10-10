@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calculateSolarPlan, estimateMonthlyConsumptionFromAppliances, estimateMonthlyConsumptionFromBill, estimatePlannerBattery, normalizeLegacyDemoLayout, PANEL_LAYOUT_ASSUMPTIONS, validatePlannerStep, type PlannerInputs } from "./planner";
+import { calculateSolarPlan, estimateMonthlyConsumptionFromAppliances, estimateMonthlyConsumptionFromBill, estimatePlannerBattery, normalizeLegacyDemoLayout, PANEL_LAYOUT_ASSUMPTIONS, plannerInputsToSolarInputs, validatePlannerStep, type PlannerInputs } from "./planner";
+import { calculateSolar } from "./solar";
 
 const DEMO_PLAN: PlannerInputs = {
   place: "Demo property · Austin, TX", property: "Detached home", roofWidthM: 8, roofLengthM: 10,
@@ -19,6 +20,16 @@ describe("solar planner model", () => {
     expect(plan.estimate.systemKw).toBeCloseTo(8.1);
     expect(plan.estimate.annualProductionKwh).toBeCloseTo(10027, -1);
     expect(plan.estimate.installationCostRangeUsd.expected).toBeCloseTo(19440);
+  });
+  it("hands the same roof-limited planner configuration into assessment calculations", () => {
+    const plan = calculateSolarPlan(DEMO_PLAN);
+    const assessmentInputs = plannerInputsToSolarInputs(DEMO_PLAN, plan.systemCapacityKw);
+    const assessment = calculateSolar(assessmentInputs);
+    expect(assessment.systemKw).toBeCloseTo(plan.estimate.systemKw ?? 0);
+    expect(assessment.annualProductionKwh).toBeCloseTo(plan.estimate.annualProductionKwh ?? 0);
+    expect(assessment.annualConsumptionKwh).toBeCloseTo(plan.estimate.annualConsumptionKwh ?? 0);
+    expect(assessment.annualSavings).toBeCloseTo(plan.estimate.annualSavings ?? 0);
+    expect(assessment.installationCostRangeUsd.expected).toBeCloseTo(plan.estimate.installationCostRangeUsd.expected ?? 0);
   });
   it("generates distinct roof-constrained scenarios with the same model", () => {
     const plan = calculateSolarPlan(DEMO_PLAN);

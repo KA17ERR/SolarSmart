@@ -478,6 +478,24 @@ body .solar-app-content :is(.primary-nav-link:hover, .primary-nav-link.active, .
 .ui-badge-neutral, .ui-badge-outline, .demo-pill, .demo-indicator, .sample-tag, .optional-pill, .estimate-only, .selected-label { border-color: var(--glass-border); background: rgb(142 111 255 / 16%); color: #e1d8ff; }
 .ui-chart-container, .comparison-chart, .comparison-chart-canvas { background-color: rgb(11 10 19 / 78%); }
 .site-footer { background-color: rgb(8 8 16 / 82%); }
+
+/* Background-matched dock for the three primary footer destinations. */
+.site-footer-inner { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.footer-dock { justify-self: center; align-items: center; gap: 5px; padding: 6px; border: 1px solid var(--glass-border); border-radius: 18px; background: rgb(255 255 255 / 5%); box-shadow: inset 0 1px rgb(255 255 255 / 4%), 0 8px 28px rgb(0 0 0 / 18%); backdrop-filter: blur(var(--glass-blur)) saturate(130%); }
+.footer-dock a, .footer-dock .footer-dock-about { position: relative; display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 9px; padding: 0 14px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--color-ink-soft); font: inherit; font-size: 12px; font-weight: 650; text-decoration: none; white-space: nowrap; transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease; }
+.footer-dock a:hover, .footer-dock .footer-dock-about:hover { transform: translateY(-2px); border-color: rgb(196 181 253 / 23%); background: rgb(196 181 253 / 9%); color: var(--color-ink); text-decoration: none; }
+.footer-dock svg { flex: none; color: #c4b5fd; }
+.footer-dock-arrow { opacity: .65; }
+.footer-dock .footer-dock-about { cursor: pointer; }
+.footer-dock a:focus-visible, .footer-dock .footer-dock-about:focus-visible { outline: 3px solid #b69cff; outline-offset: 3px; box-shadow: none; }
+.estimate-about-copy { max-height: min(62vh, 560px); overflow: auto; color: var(--color-ink-soft); font-size: 13px; line-height: 1.65; }
+.estimate-about-copy p { margin: 0 0 14px; }
+.estimate-about-copy h3 { margin: 20px 0 7px; font-size: 14px; }
+.estimate-about-copy ul { display: grid; gap: 8px; margin: 0 0 16px; padding-left: 20px; }
+.estimate-about-copy a { color: #c4b5fd; }
+@media (max-width: 900px) { .site-footer-inner { grid-template-columns: 1fr; justify-items: center; }.footer-brand { width: min(100%, 480px); }.footer-note { grid-column: auto; justify-content: center; }.footer-dock { max-width: 100%; } }
+@media (max-width: 560px) { .footer-dock { width: 100%; justify-content: space-around; gap: 2px; padding: 4px; border-radius: 15px; }.footer-dock a, .footer-dock .footer-dock-about { min-width: 0; min-height: 48px; flex: 1; flex-direction: column; gap: 3px; padding: 5px 3px; font-size: 9px; }.footer-dock-arrow { display: none; }.footer-dock span { overflow: hidden; max-width: 100%; text-overflow: ellipsis; }.footer-note { font-size: 10px; } }
+@media (prefers-reduced-motion: reduce) { .footer-dock a, .footer-dock .footer-dock-about { transition-duration: .01ms; } }
 .home-closing { background-color: rgb(9 8 17 / 78%); }
 body .solar-app-content :is(.account-logout, .saved-project-name form button, .password-visibility, .property-map-search button, .property-map-results button, .property-map-selection button, .property-map-optin button) {
   border-color: var(--glass-border);

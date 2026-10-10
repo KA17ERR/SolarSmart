@@ -9,6 +9,7 @@ import { DASHBOARD_INSIGHTS, getDashboardInsight } from "@/lib/dashboard-insight
 import { calculateSolar, validateInputs, type SolarInputs, type SolarResults } from "@/lib/solar";
 import { DEMO_SCENARIOS } from "@/lib/scenarios";
 import { buildRecommendations } from "@/lib/recommendations";
+import { GenerationProjectionChart, SavingsProjectionChart } from "@/components/solar/projection-charts";
 import "../../../dashboard-insights.css";
 
 export function generateStaticParams() {
@@ -49,7 +50,8 @@ export default async function DashboardInsightPage({ params, searchParams }: { p
         <div className="insight-hero-image"><Image src={insight.image} alt={insight.imageAlt} fill sizes="(max-width: 760px) 100vw, 48vw" priority /></div>
       </section>
       <InsightMetrics slug={slug} inputs={inputs} result={result} />
-      {(slug === "energy-generation" || slug === "consumption-savings") && <ProjectionTable slug={slug} result={result} />}
+      {slug === "energy-generation" && <GenerationProjectionChart result={result} />}
+      {slug === "consumption-savings" && <SavingsProjectionChart result={result} />}
       <section className="insight-content" aria-label={`${insight.title} details`}>
         {insight.sections.map(section => <article className="insight-card" key={section.title}>
           <div><h2>{section.title}</h2><p>{section.body}</p>{section.bullets && <ul>{section.bullets.map(bullet => <li key={bullet}>{bullet}</li>)}</ul>}</div>
@@ -94,15 +96,5 @@ function InsightMetrics({ slug, inputs, result }: { slug: string; inputs: SolarI
     {slug === "scenario-comparison" && <div className="insight-scenario-list">{DEMO_SCENARIOS.map(scenario => { const comparison = calculateSolar(scenario.inputs); return <div key={scenario.id}><strong>{scenario.name}</strong><span>{comparison.systemKw.toFixed(1)} kW · {number(comparison.annualProductionKwh)} kWh/year · {money(comparison.annualSavings)}/year savings</span></div>; })}<Link href="/assessment/compare">Open scenario comparison <ArrowUpRight size={14}/></Link></div>}
     {recommendations.length > 0 && <div className="insight-recommendations"><h3>Practical next steps for this estimate</h3><ol>{recommendations.map(item => <li key={item.title}><strong>{item.title}</strong><span>{item.detail}</span></li>)}</ol></div>}
     {slug === "system-assumptions" && <div className="insight-checklist"><h3>Planning checklist</h3><ul><li>Check a recent electricity bill and confirm the retail rate.</li><li>Confirm usable roof area, roof condition, orientation, and shade.</li><li>Ask a qualified installer for a site-specific design and itemized quote.</li><li>Verify export compensation, permits, and incentive eligibility with official sources.</li></ul></div>}
-  </section>;
-}
-
-function ProjectionTable({ slug, result }: { slug: string; result: SolarResults }) {
-  const isSavings = slug === "consumption-savings";
-  const format = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
-  return <section className="insight-live-data insight-projection" aria-label={isSavings ? "Savings projection details" : "Energy production projection details"}>
-    <div className="insight-live-heading"><div><p className="eyebrow">Modeled projection</p><h2>{isSavings ? "Savings and remaining bill" : "Generation and household use"}</h2></div><span>Yearly estimates</span></div>
-    <div className="insight-table-scroll"><table><thead><tr><th>Year</th>{isSavings ? <><th>Solar savings</th><th>Remaining utility bill</th><th>Cumulative net savings</th></> : <><th>Generation</th><th>Household use</th><th>Used on site</th><th>Exported</th></>}</tr></thead><tbody>{result.annualProjection.slice(0, isSavings ? 10 : 5).map(row => <tr key={row.year}><th scope="row">Year {row.year}</th>{isSavings ? <><td>${format(row.totalSavingsUsd)}</td><td>${format(row.remainingBillUsd)}</td><td>${format(row.cumulativeNetSavingsUsd)}</td></> : <><td>{format(row.generationKwh)} kWh</td><td>{format(row.consumptionKwh)} kWh</td><td>{format(row.selfConsumedKwh)} kWh</td><td>{format(row.exportedKwh)} kWh</td></>}</tr>)}</tbody></table></div>
-    <p className="insight-table-note">Model output based on the assumptions on this assessment. It is not a live reading or a guaranteed result.</p>
   </section>;
 }
