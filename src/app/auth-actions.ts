@@ -48,6 +48,32 @@ export async function signupAction(_previous: AuthActionState, data: FormData): 
   return { message: "Your sign-up request was accepted. Check your email for a confirmation link before signing in." };
 }
 
+export async function resendVerificationAction(_previous: AuthActionState, data: FormData): Promise<AuthActionState> {
+  if (!hasSupabaseConfiguration()) return { error: "Email verification is not configured right now. You can continue with the local demo." };
+  const email = text(data, "email").toLowerCase();
+  if (!emailOkay(email)) return { error: "Enter a valid email address to request another verification email." };
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${siteOrigin()}/auth/callback?next=/dashboard` },
+    });
+    if (error) {
+      if (error.status === 429 || error.code === "over_email_send_rate_limit") {
+        return { error: "The email service is temporarily limiting requests. Wait a minute before trying again. If you already confirmed, sign in." };
+      }
+      return { error: "We could not send another confirmation email right now. Wait a moment, or sign in if you already confirmed." };
+    }
+    // Keep the result deliberately generic so the form cannot be used to check
+    // whether an arbitrary email address has an account.
+    return { message: "If this address has a pending confirmation, a new email has been sent. Check your inbox and spam folder. If you already confirmed, sign in." };
+  } catch {
+    return { error: "We could not send another confirmation email right now. Wait a moment, or sign in if you already confirmed." };
+  }
+}
+
 export async function forgotPasswordAction(_previous: AuthActionState, data: FormData): Promise<AuthActionState> {
   if (!hasSupabaseConfiguration()) return { error: "Password recovery is not configured. You can still use the local demo." };
   const email = text(data, "email").toLowerCase();

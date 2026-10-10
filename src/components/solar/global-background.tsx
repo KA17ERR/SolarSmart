@@ -6,11 +6,11 @@ import WebThreads from "@/components/solar/web-threads";
 export function GlobalBackground() {
   return <WebThreads
     className="web-threads-global"
-    color1="#7654d8"
-    color2="#b6a0ff"
-    color3="#eee8ff"
-    speed={0.2}
-    threadCount={6}
+    color1="#315d49"
+    color2="#789875"
+    color3="#d6c69f"
+    speed={0.12}
+    threadCount={3}
     frequency={5}
     spread={0.18}
     taper={1}
@@ -19,13 +19,13 @@ export function GlobalBackground() {
     glow={0.02}
     falloff={0.6}
     thickness={1.1}
-    brightness={0.92}
-    opacity={0.88}
+    brightness={0.58}
+    opacity={0.2}
     mirror
     shimmer={false}
     grain
-    grainIntensity={0.05}
-    mouseInteraction
-    mouseStrength={0.3}
+    grainIntensity={0.02}
+    mouseInteraction={false}
+    mouseStrength={0.1}
   />;
 }

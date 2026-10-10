@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">SolarSmart</title>
+  <rect width="64" height="64" rx="15" fill="#294d3d"/>
+  <path d="M12 31.5 31.8 15 52 31.5" fill="none" stroke="#f0d193" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <path d="M19 29.5v20h26v-20" fill="#e6efe1"/>
+  <path d="M26 34h12v9H26z" fill="#527c59"/>
+  <path d="M25.5 38.5h13M32 34v9" stroke="#d7e5cf" stroke-width="1.5"/>
+  <path d="M32 45v4" stroke="#294d3d" stroke-width="2"/>
+</svg>
