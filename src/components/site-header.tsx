@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, Sun, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, ChevronDown, Home, Menu, Sun, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
 
 const links = [
@@ -11,7 +12,7 @@ const links = [
   { label: "Energy Dashboard", id: "dashboard" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: { showMainMenuLink?: boolean; accordionOnly?: boolean }) {
   const pathname = usePathname();
   const inAssessment = pathname.startsWith("/assessment");
   const inPlanner = pathname.startsWith("/planner");
@@ -51,23 +52,22 @@ export function SiteHeader() {
 
   return <>
     <a className="skip-link" href="#main-content">Skip to content</a>
-    <header className="site-header">
+    <header className={`site-header${showMainMenuLink ? " has-main-menu-link" : ""}${accordionOnly ? " accordion-only-header" : ""}`}>
       <div className="site-header-inner">
-        <a className="site-brand" href={inAssessment || inPlanner ? "/#home" : "#home"} onClick={() => setMenuOpen(false)} aria-label="SolarSmart home">
+        {!accordionOnly && <a className="site-brand" href={inAssessment || inPlanner ? "/#home" : "#home"} onClick={() => setMenuOpen(false)} aria-label="SolarSmart home">
           <span className="site-brand-mark"><Sun size={19} aria-hidden="true"/></span>
           <span>Solar<span className="site-brand-light">Smart</span><small>ROOFTOP SOLAR, MADE CLEAR</small></span>
-        </a>
-        <nav className="primary-nav" aria-label="Main navigation">
-          {links.map(link => <a key={link.id} href={hrefFor(link.id)} className={active === link.id ? "primary-nav-link active" : "primary-nav-link"} aria-current={active === link.id ? "location" : undefined}>{link.label}</a>)}
-        </nav>
-        <a className="header-login" href="/login">Log in</a>
-        <ButtonLink className="header-cta" href="/planner">Build My Solar <span aria-hidden="true">→</span></ButtonLink>
-        <button type="button" className="mobile-menu-toggle" aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(open => !open)}>{menuOpen ? <X size={21}/> : <Menu size={21}/>}</button>
+        </a>}
+        {showMainMenuLink && <Link className="header-main-menu-link" href="/#home" aria-label="Main Menu"><Home size={15} aria-hidden="true"/><span>Main Menu</span></Link>}
+        <button type="button" className={`card-nav-toggle${menuOpen ? " open" : ""}`} aria-label={menuOpen ? "Close Explore navigation" : "Explore navigation"} aria-expanded={menuOpen} aria-controls="main-card-navigation" onClick={() => setMenuOpen(open => !open)}>
+          <Menu className="card-nav-menu-icon" size={18} aria-hidden="true" />{menuOpen ? <X className="card-nav-mobile-close" size={18} aria-hidden="true" /> : null}<span className="card-nav-label">Explore</span><ChevronDown className="card-nav-chevron" size={15} aria-hidden="true" />
+        </button>
+        {!accordionOnly && <><a className="header-login" href="/login">Log in</a><ButtonLink className="header-cta" href="/planner">Build My Solar <span aria-hidden="true">→</span></ButtonLink></>}
       </div>
-      <nav id="mobile-navigation" className={menuOpen ? "mobile-nav open" : "mobile-nav"} aria-label="Mobile navigation" hidden={!menuOpen}>
-        {links.map(link => <a key={link.id} href={hrefFor(link.id)} className={active === link.id ? "mobile-nav-link active" : "mobile-nav-link"} aria-current={active === link.id ? "location" : undefined} onClick={() => setMenuOpen(false)}>{link.label}</a>)}
-        <a href="/login" className="mobile-nav-link" onClick={() => setMenuOpen(false)}>Log in</a>
-        <ButtonLink href="/planner" className="mobile-cta">Build My Solar <span aria-hidden="true">→</span></ButtonLink>
+      <nav id="main-card-navigation" className={`card-nav-content${menuOpen ? " open" : ""}`} aria-label="Main navigation" aria-hidden={!menuOpen}>
+        {links.map((link, index) => <a key={link.id} href={hrefFor(link.id)} className={`nav-card${index === 2 ? " nav-card-accent" : ""}${active === link.id ? " active" : ""}`} aria-current={active === link.id ? "location" : undefined} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} onKeyDown={event => { if (event.key === "Escape") setMenuOpen(false); }}>
+          <span className="nav-card-kicker">{["Discover", "Design", "Review"][index]}</span><strong>{link.label}</strong><span className="nav-card-description">{["See how a solar plan comes together.", "Build a plan around your roof and energy use.", "Explore modeled generation, savings, and assumptions."][index]}</span><span className="nav-card-link">Open section <ArrowUpRight size={15} aria-hidden="true" /></span>
+        </a>)}
       </nav>
     </header>
   </>;

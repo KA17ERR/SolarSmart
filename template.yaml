@@ -40,7 +40,6 @@ Rules:
         AssertDescription: Set StrandsModelId to a direct foundation model ID when StrandsEnabled is true.
 Conditions:
   EnableStrands: !Equals [!Ref StrandsEnabled, 'true']
-  IsProd: !Equals [!Ref DeploymentEnvironment, prod]
 Resources:
   AssistantApi:
     Type: AWS::Serverless::Api

@@ -35,4 +35,14 @@ describe("panel layout", () => {
     expect(layout.panels.map(panel => panel.id)).toEqual([1, 4]);
     expect(layout.occupiedAreaM2).toBeCloseTo(2 * 1.1 * 1.9);
   });
+  it("keeps gable modules on one side or the other of the ridge", () => {
+    const layout = calculatePanelLayout({ ...base, roofShape: "gable" });
+    expect(layout.panels.length).toBeLessThan(calculatePanelLayout(base).panels.length);
+    expect(layout.panels.every(panel => panel.x + panel.width <= 4 || panel.x >= 4)).toBe(true);
+  });
+  it("reduces hip-roof placement to panels that fit inside the clipped roof plane", () => {
+    const layout = calculatePanelLayout({ ...base, roofShape: "hip" });
+    expect(layout.panels.length).toBeLessThan(calculatePanelLayout(base).panels.length);
+    expect(layout.panels.every(panel => panel.x >= .3 && panel.x + panel.width <= 7.7 && panel.y >= .3 && panel.y + panel.height <= 9.7)).toBe(true);
+  });
 });

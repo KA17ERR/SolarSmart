@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildAssistantFallback } from "@/lib/ai/fallback";
 import { isAssistantRequest, isAssistantReply, type AssistantReply, type AssistantRequest } from "@/lib/assistant/contract";
+import { getAssistantApiKey } from "@/lib/aws/assistant-api-key";
+import { hasSupabaseConfiguration } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 const MAX_BODY_CHARS = 16_000;
@@ -39,6 +42,21 @@ function safeEndpoint(value: string | undefined): URL | null {
   return null;
 }
 
+function isLocalEndpoint(endpoint: URL): boolean {
+  return ["localhost", "127.0.0.1", "host.docker.internal"].includes(endpoint.hostname);
+}
+
+async function hasVerifiedUserSession(): Promise<boolean> {
+  if (!hasSupabaseConfiguration()) return false;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getUser();
+    return !error && Boolean(data.user?.id);
+  } catch {
+    return false;
+  }
+}
+
 function normalizedLocal(request: AssistantRequest, status: string): AssistantReply {
   const reply = buildAssistantFallback(request, status);
   if (isAssistantReply(reply)) return reply;
@@ -57,11 +75,21 @@ export async function POST(request: NextRequest) {
   const endpoint = safeEndpoint(process.env.SOLARSMART_AI_ENDPOINT);
   if (!endpoint) return NextResponse.json(normalizedLocal(body, "Strands is not configured on this server; the local assistant answered."), { headers: { "cache-control": "no-store" } });
 
+  const localEndpoint = isLocalEndpoint(endpoint);
+  if (!localEndpoint && !await hasVerifiedUserSession()) {
+    return NextResponse.json(normalizedLocal(body, "Sign in to use the hosted assistant; deterministic local guidance is shown."), { headers: { "cache-control": "no-store" } });
+  }
+
+  const apiKey = await getAssistantApiKey();
+  if (!localEndpoint && !apiKey) {
+    return NextResponse.json(normalizedLocal(body, "The hosted assistant is not securely configured; deterministic local guidance is shown."), { headers: { "cache-control": "no-store" } });
+  }
+
   try {
     const upstream = await fetch(endpoint, {
       method: "POST", headers: {
         "content-type": "application/json",
-        ...(process.env.SOLARSMART_AI_API_KEY ? { "x-api-key": process.env.SOLARSMART_AI_API_KEY } : {}),
+        ...(apiKey ? { "x-api-key": apiKey } : {}),
       },
       // The SAM function validates the same typed summary before passing it to Strands.
       body: JSON.stringify(body), cache: "no-store", signal: AbortSignal.timeout(8_000),

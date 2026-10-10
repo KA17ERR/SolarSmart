@@ -1,6 +1,7 @@
 /** Pure roof-grid geometry for the local planner. Dimensions are illustrative and
  * must be confirmed by an installer; this module does not assess roof structure. */
 export type PanelOrientation = "landscape" | "portrait";
+export type RoofShape = "flat" | "gable" | "hip";
 export type PanelLayoutInput = {
   roofWidthM: number;
   roofLengthM: number;
@@ -9,6 +10,7 @@ export type PanelLayoutInput = {
   edgeClearanceM?: number;
   gapM?: number;
   orientation?: PanelOrientation;
+  roofShape?: RoofShape;
   maxPanels?: number;
   /** Stable one-based module indexes to render; omitted indexes leave visible gaps. */
   panelIds?: number[];
@@ -39,8 +41,32 @@ export function calculatePanelLayout(input: PanelLayoutInput): PanelLayout {
     const row = Math.floor(i / columns);
     const column = i % columns;
     if (panelIds && !panelIds.has(i + 1)) continue;
-    panels.push({ id: i + 1, x: clearance + column * (width + gap), y: clearance + row * (height + gap), width, height, row, column });
+    const panel = { id: i + 1, x: clearance + column * (width + gap), y: clearance + row * (height + gap), width, height, row, column };
+    if (input.roofShape === "gable" && panel.x < roofWidthM / 2 && panel.x + panel.width > roofWidthM / 2) continue;
+    if (input.roofShape === "hip" && !fitsHipPlane(panel, roofWidthM, roofLengthM, clearance)) continue;
+    panels.push(panel);
   }
   const area = roofWidthM * roofLengthM;
   return { panels, columns, rows, roofAreaM2: area, occupiedAreaM2: panels.length * width * height, usableAreaM2: usableWidth * usableLength };
+}
+
+function fitsHipPlane(panel: PlacedPanel, roofWidthM: number, roofLengthM: number, clearance: number) {
+  const inset = Math.min(roofWidthM * .22, roofLengthM * .18);
+  const top = clearance + inset;
+  const bottom = roofLengthM - clearance - inset;
+  const left = clearance;
+  const right = roofWidthM - clearance;
+  const polygon = [
+    [left + inset, clearance], [right - inset, clearance], [right, top], [right, bottom],
+    [right - inset, roofLengthM - clearance], [left + inset, roofLengthM - clearance], [left, bottom], [left, top],
+  ];
+  const corners = [[panel.x, panel.y], [panel.x + panel.width, panel.y], [panel.x, panel.y + panel.height], [panel.x + panel.width, panel.y + panel.height]];
+  return corners.every(([x, y]) => {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i]; const [xj, yj] = polygon[j];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  });
 }

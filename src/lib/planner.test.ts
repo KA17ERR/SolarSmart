@@ -28,6 +28,15 @@ describe("solar planner model", () => {
     expect(plan.scenarios[2].result.systemKw).toBeCloseTo(9.9);
     expect(plan.scenarios[2].result.annualProductionKwh).toBeGreaterThan(plan.scenarios[2].result.annualConsumptionKwh!);
   });
+  it("derives usable module capacity from the selected roof geometry", () => {
+    const flat = calculateSolarPlan({ ...DEMO_PLAN, placedPanelIds: null, roofShape: "flat" });
+    const gable = calculateSolarPlan({ ...DEMO_PLAN, placedPanelIds: null, roofShape: "gable" });
+    const hip = calculateSolarPlan({ ...DEMO_PLAN, placedPanelIds: null, roofShape: "hip" });
+    expect(flat.maxPanelCount).toBeGreaterThan(gable.maxPanelCount);
+    expect(gable.maxPanelCount).toBeGreaterThan(hip.maxPanelCount);
+    expect(gable.panelCount).toBe(gable.maxPanelCount);
+    expect(hip.systemCapacityKw).toBeCloseTo(hip.panelCount * DEMO_PLAN.panelWatts / 1000);
+  });
   it("changes output with shade, orientation, and panel rating assumptions", () => {
     const baseline = calculateSolarPlan(DEMO_PLAN);
     const shaded = calculateSolarPlan({ ...DEMO_PLAN, shading: "high" });

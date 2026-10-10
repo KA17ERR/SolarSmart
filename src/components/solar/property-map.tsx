@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 import { AlertCircle, LoaderCircle, MapPin, Search } from "lucide-react";
 import { isValidGeocodeQuery, parseGeocodeResults, type GeocodeResult } from "@/lib/map-search";
@@ -71,8 +71,7 @@ export function PropertyMap({ onConfirm, onUseSample }: { onConfirm: (label: str
     };
   }, [enabled]);
 
-  async function search(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function search() {
     const text = query.trim();
     if (!isValidGeocodeQuery(text)) { setError("Enter a city, postcode, landmark, or address between 2 and 120 characters."); return; }
     if (searchLock.current) return;
@@ -126,10 +125,10 @@ export function PropertyMap({ onConfirm, onUseSample }: { onConfirm: (label: str
   return <section className="property-map-card" aria-labelledby="property-map-title">
     <div className="property-map-heading"><div><p className="landing-eyebrow">Optional online map</p><h3 id="property-map-title">Find an approximate property location</h3><p>City and postcode search uses OpenStreetMap/Nominatim. You choose whether to search; no device location is requested. A marker does not identify a specific building.</p></div><MapPin aria-hidden="true" size={19}/></div>
     {!enabled && <div className="property-map-optin"><p>Load an optional live street map. This contacts OpenStreetMap tile servers; your location is only sent to the geocoder if you later press Search.</p><button type="button" onClick={() => setEnabled(true)}>Load online map</button></div>}
-    {enabled && <form className="property-map-search" onSubmit={search}>
+    {enabled && <div className="property-map-search">
       <label htmlFor="property-location-search">Search by city, postcode, landmark, or address</label>
-      <div><input id="property-location-search" value={query} onChange={event => setQuery(event.target.value)} maxLength={120} placeholder="e.g. Austin, TX" autoComplete="off"/><button type="submit" disabled={busy || query.trim().length < 2}>{busy ? <><LoaderCircle size={15} className="spin"/> Searching</> : <><Search size={15}/> Search</>}</button></div>
-    </form>}
+      <div><input id="property-location-search" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} maxLength={120} placeholder="e.g. Austin, TX" autoComplete="off"/><button type="button" onClick={() => void search()} disabled={busy || query.trim().length < 2}>{busy ? <><LoaderCircle size={15} className="spin"/> Searching</> : <><Search size={15}/> Search</>}</button></div>
+    </div>}
     {busy && <p role="status" className="property-map-status">Searching OpenStreetMap…</p>}
     {error && <p role="alert" className="property-map-error"><AlertCircle size={15}/>{error}</p>}
     {hits.length > 0 && <ul className="property-map-results" aria-label="Location search results">{hits.map((hit, index) => <li key={`${hit.lat}-${hit.lng}-${index}`}><button type="button" onClick={() => selectHit(hit)}>{hit.displayName}</button></li>)}</ul>}

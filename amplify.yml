@@ -1,0 +1,32 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        # This repo uses a separate default production dist directory to avoid
+        # OneDrive cache issues locally; Amplify's Next.js adapter expects .next.
+        - export SOLARSMART_NEXT_DIST_DIR=.next
+        # Make only the non-secret settings that Next needs at runtime available
+        # to the SSR compute environment. Never write AI API keys or passwords here.
+        - printf 'SOLARSMART_NEXT_DIST_DIR=.next\n' >> .env.production
+        - if [ -n "$NEXT_PUBLIC_SITE_URL" ]; then printf 'NEXT_PUBLIC_SITE_URL=%s\n' "$NEXT_PUBLIC_SITE_URL" >> .env.production; fi
+        - if [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then printf 'NEXT_PUBLIC_SUPABASE_URL=%s\n' "$NEXT_PUBLIC_SUPABASE_URL" >> .env.production; fi
+        - if [ -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ]; then printf 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" >> .env.production; fi
+        - if [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then printf 'NEXT_PUBLIC_SUPABASE_ANON_KEY=%s\n' "$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.production; fi
+        # These values are non-secret selectors/config. The actual API key stays
+        # encrypted in SSM and is fetched by the server with its SSR Compute role.
+        - if [ -n "$SOLARSMART_AI_ENDPOINT" ]; then printf 'SOLARSMART_AI_ENDPOINT=%s\n' "$SOLARSMART_AI_ENDPOINT" >> .env.production; fi
+        - if [ -n "$SOLARSMART_AI_API_KEY_PARAMETER" ]; then printf 'SOLARSMART_AI_API_KEY_PARAMETER=%s\n' "$SOLARSMART_AI_API_KEY_PARAMETER" >> .env.production; fi
+        - if [ -n "$SOLARSMART_AI_SECRET_REGION" ]; then printf 'SOLARSMART_AI_SECRET_REGION=%s\n' "$SOLARSMART_AI_SECRET_REGION" >> .env.production; fi
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*

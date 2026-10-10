@@ -1,4 +1,4 @@
-import { calculatePanelLayout, type PanelLayout, type PanelOrientation } from "./panel-layout";
+import { calculatePanelLayout, type PanelLayout, type PanelOrientation, type RoofShape } from "./panel-layout";
 import { estimateSolar, estimatedAnnualYieldPerKw, type SolarEstimate, type SolarInputs } from "./solar";
 
 export type RoofFacing = "south" | "south-east" | "south-west" | "east" | "west" | "north";
@@ -9,6 +9,7 @@ export type PlannerInputs = {
   roofWidthM: number;
   roofLengthM: number;
   panelOrientation: PanelOrientation;
+  roofShape?: RoofShape;
   roofFacing: RoofFacing;
   panelWatts: number;
   panelWidthM: number;
@@ -54,6 +55,7 @@ export function isPlannerInputs(value: unknown): value is PlannerInputs {
   if (!["landscape", "portrait"].includes(String(input.panelOrientation)) || !["south", "south-east", "south-west", "east", "west", "north"].includes(String(input.roofFacing)) || !["low", "moderate", "high"].includes(String(input.shading))) return false;
   if (![450, 550].includes(Number(input.panelWatts)) || Number(input.panelWidthM) < .5 || Number(input.panelWidthM) > 3 || Number(input.panelLengthM) < .5 || Number(input.panelLengthM) > 4 || Number(input.roofTiltDegrees) < 0 || Number(input.roofTiltDegrees) > 60) return false;
   if (input.batteryCapacityKwh !== undefined && ![0, 5, 10].includes(Number(input.batteryCapacityKwh))) return false;
+  if (input.roofShape !== undefined && !["flat", "gable", "hip"].includes(String(input.roofShape))) return false;
   if (input.placedPanelIds !== null && (!Array.isArray(input.placedPanelIds) || input.placedPanelIds.length > 500 || input.placedPanelIds.some(id => !Number.isSafeInteger(id) || Number(id) < 0))) return false;
   return [0, 1, 2].every(step => validatePlannerStep(input as unknown as PlannerInputs, step as 0 | 1 | 2).length === 0);
 }
@@ -148,16 +150,19 @@ function scenarioEstimate(input: PlannerInputs, panelCount: number, assumptions:
 /** Composes panel geometry with the shared deterministic energy and financial engine. */
 export function calculateSolarPlan(input: PlannerInputs): SolarPlan {
   const physicalLayout = calculatePanelLayout({ roofWidthM: input.roofWidthM, roofLengthM: input.roofLengthM, panelWidthM: input.panelWidthM, panelLengthM: input.panelLengthM, edgeClearanceM: PANEL_LAYOUT_ASSUMPTIONS.edgeClearanceM, gapM: PANEL_LAYOUT_ASSUMPTIONS.gapM, orientation: input.panelOrientation });
+  const surfaceLayout = calculatePanelLayout({ roofWidthM: input.roofWidthM, roofLengthM: input.roofLengthM, panelWidthM: input.panelWidthM, panelLengthM: input.panelLengthM, edgeClearanceM: PANEL_LAYOUT_ASSUMPTIONS.edgeClearanceM, gapM: PANEL_LAYOUT_ASSUMPTIONS.gapM, orientation: input.panelOrientation, roofShape: input.roofShape ?? "flat" });
   const roofAreaM2 = Number.isFinite(input.roofWidthM * input.roofLengthM) && input.roofWidthM > 0 && input.roofLengthM > 0 ? input.roofWidthM * input.roofLengthM : 0;
   const baseInputs = makeSolarInputs(input, 0, 0);
   const roofEstimate = estimateSolar({ ...baseInputs, targetAnnualOffsetRate: 1 });
   const roofCapacityKw = roofEstimate.roofCapacityKw ?? 0;
-  const maxPanelCount = Math.max(0, Math.min(physicalLayout.panels.length, Math.floor((roofCapacityKw * 1000 + 1e-6) / input.panelWatts)));
-  const availablePanelIds = physicalLayout.panels.slice(0, maxPanelCount).map(panel => panel.id);
+  const maxPanelCount = Math.max(0, Math.min(surfaceLayout.panels.length, Math.floor((roofCapacityKw * 1000 + 1e-6) / input.panelWatts)));
+  const availablePanelIds = surfaceLayout.panels.slice(0, maxPanelCount).map(panel => panel.id);
   const placedPanelIds = input.placedPanelIds === null ? availablePanelIds : [...new Set(input.placedPanelIds)].filter(id => availablePanelIds.includes(id));
   const panelCount = placedPanelIds.length;
   const systemCapacityKw = panelCount * input.panelWatts / 1000;
-  const panelLayout = calculatePanelLayout({ roofWidthM: input.roofWidthM, roofLengthM: input.roofLengthM, panelWidthM: input.panelWidthM, panelLengthM: input.panelLengthM, edgeClearanceM: PANEL_LAYOUT_ASSUMPTIONS.edgeClearanceM, gapM: PANEL_LAYOUT_ASSUMPTIONS.gapM, orientation: input.panelOrientation, maxPanels: maxPanelCount, panelIds: placedPanelIds });
+  const placedSet = new Set(placedPanelIds);
+  const placedPanels = surfaceLayout.panels.filter(panel => placedSet.has(panel.id));
+  const panelLayout = { ...surfaceLayout, panels: placedPanels, occupiedAreaM2: placedPanels.length * input.panelWidthM * input.panelLengthM };
   const estimate = estimateSolar(makeSolarInputs(input, systemCapacityKw, systemCapacityKw * input.installedCostUsdPerKw));
   const scenarioCounts = [Math.max(0, Math.floor(panelCount * .55)), panelCount, maxPanelCount];
   const ids = ["conservative", "current", "roof-max"] as const;
