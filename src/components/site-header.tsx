@@ -5,15 +5,14 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown, Home, Menu, Sun, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
-
-const links = [
-  { label: "How It Works", id: "how-it-works" },
-  { label: "Solar Planner", id: "planner" },
-  { label: "Energy Dashboard", id: "dashboard" },
-];
+import { LogoutButton, useAuthStatus } from "@/components/auth-state";
+import { getNavigationVisibility, getVisibleNavigationLinks, MAIN_NAVIGATION_LINKS } from "@/lib/navigation";
 
 export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: { showMainMenuLink?: boolean; accordionOnly?: boolean }) {
   const pathname = usePathname();
+  const authStatus = useAuthStatus();
+  const { authenticated, unauthenticated } = getNavigationVisibility(authStatus);
+  const visibleLinks = getVisibleNavigationLinks(authenticated);
   const inAssessment = pathname.startsWith("/assessment");
   const inPlanner = pathname.startsWith("/planner");
   const inDashboard = pathname.startsWith("/dashboard");
@@ -32,7 +31,7 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
     const dashboardAvailable = !!document.getElementById("dashboard");
     setHasDashboard(dashboardAvailable);
     setActive(inAssessment ? dashboardAvailable ? "dashboard" : "home" : inDashboard ? "dashboard" : inPlanner ? "planner" : "home");
-    const targets = links.map(link => document.getElementById(link.id)).filter((target): target is HTMLElement => target !== null);
+    const targets = MAIN_NAVIGATION_LINKS.map(link => document.getElementById(link.id)).filter((target): target is HTMLElement => target !== null);
     const observer = new IntersectionObserver(entries => {
       const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setActive(visible.target.id);
@@ -62,12 +61,15 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
         <button type="button" className={`card-nav-toggle${menuOpen ? " open" : ""}`} aria-label={menuOpen ? "Close Explore navigation" : "Explore navigation"} aria-expanded={menuOpen} aria-controls="main-card-navigation" onClick={() => setMenuOpen(open => !open)}>
           <Menu className="card-nav-menu-icon" size={18} aria-hidden="true" />{menuOpen ? <X className="card-nav-mobile-close" size={18} aria-hidden="true" /> : null}<span className="card-nav-label">Explore</span><ChevronDown className="card-nav-chevron" size={15} aria-hidden="true" />
         </button>
-        {!accordionOnly && <><a className="header-login" href="/login">Log in</a><ButtonLink className="header-cta" href="/planner">Build My Solar <span aria-hidden="true">→</span></ButtonLink></>}
+      {unauthenticated && <><Link className="header-login" href="/login">Log in</Link><Link className="header-login" href="/signup">Sign up</Link></>}
+      {authenticated && <><Link className="header-login" href="/dashboard">Energy Dashboard</Link><ButtonLink className="header-cta" href="/planner">Build My Solar <span aria-hidden="true">→</span></ButtonLink><LogoutButton className="header-login header-sign-out"/></>}
       </div>
       <nav id="main-card-navigation" className={`card-nav-content${menuOpen ? " open" : ""}`} aria-label="Main navigation" aria-hidden={!menuOpen}>
-        {links.map((link, index) => <a key={link.id} href={hrefFor(link.id)} className={`nav-card${index === 2 ? " nav-card-accent" : ""}${active === link.id ? " active" : ""}`} aria-current={active === link.id ? "location" : undefined} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} onKeyDown={event => { if (event.key === "Escape") setMenuOpen(false); }}>
+        {visibleLinks.map(link => { const index = MAIN_NAVIGATION_LINKS.findIndex(item => item.id === link.id); return <a key={link.id} href={hrefFor(link.id)} className={`nav-card${index === 2 ? " nav-card-accent" : ""}${active === link.id ? " active" : ""}`} aria-current={active === link.id ? "location" : undefined} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} onKeyDown={event => { if (event.key === "Escape") setMenuOpen(false); }}>
           <span className="nav-card-kicker">{["Discover", "Design", "Review"][index]}</span><strong>{link.label}</strong><span className="nav-card-description">{["See how a solar plan comes together.", "Build a plan around your roof and energy use.", "Explore modeled generation, savings, and assumptions."][index]}</span><span className="nav-card-link">Open section <ArrowUpRight size={15} aria-hidden="true" /></span>
-        </a>)}
+        </a>; })}
+        {unauthenticated && <><Link className="nav-card auth-nav-card" href="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">Account</span><strong>Log in</strong><span className="nav-card-link">Sign in to your account <ArrowUpRight size={15}/></span></Link><Link className="nav-card auth-nav-card" href="/signup" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">New here?</span><strong>Sign up</strong><span className="nav-card-link">Create an account <ArrowUpRight size={15}/></span></Link></>}
+        {authenticated && <div className="nav-card auth-nav-card"><span className="nav-card-kicker">Account</span><LogoutButton className="nav-card-sign-out" tabIndex={menuOpen ? 0 : -1}/></div>}
       </nav>
     </header>
   </>;

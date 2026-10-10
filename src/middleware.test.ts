@@ -39,9 +39,26 @@ describe("Supabase session middleware", () => {
     expect(response.cookies.get("sb-project-auth-token")?.value).toBe("fresh-token");
   });
 
-  it("keeps public demo routes available when Supabase is not configured", async () => {
+  it("redirects protected planner URLs to login while preserving the intended destination", async () => {
+    const response = await middleware(new NextRequest("https://solarsmart.example/planner?project=abc"));
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://solarsmart.example/login?next=%2Fplanner%3Fproject%3Dabc");
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(mocks.createServerClient).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when Supabase cannot verify a session", async () => {
+    mocks.config = { url: "https://project.supabase.co", publishableKey: "public-key" };
+    mocks.createServerClient.mockReturnValue({ auth: { getClaims: async () => ({ data: { claims: null }, error: new Error("session unavailable") }) } });
+    const response = await middleware(new NextRequest("https://solarsmart.example/dashboard"));
+    expect(response.headers.get("location")).toBe("https://solarsmart.example/login?next=%2Fdashboard");
+  });
+
+  it("allows a verified session into the planner without caching private pages", async () => {
+    mocks.config = { url: "https://project.supabase.co", publishableKey: "public-key" };
+    mocks.createServerClient.mockReturnValue({ auth: { getClaims: async () => ({ data: { claims: { sub: "user-1" } }, error: null }) } });
     const response = await middleware(new NextRequest("https://solarsmart.example/planner"));
     expect(response.status).toBe(200);
-    expect(mocks.createServerClient).not.toHaveBeenCalled();
+    expect(response.headers.get("cache-control")).toContain("no-store");
   });
 });

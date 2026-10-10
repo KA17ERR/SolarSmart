@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowRight, House, PanelsTopLeft, ChartNoAxesCombined } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
+import { useAuthStatus } from "@/components/auth-state";
 import { CinematicSolarScene } from "@/components/solar/cinematic-solar-scene";
 
 const scenes = [
@@ -32,6 +33,7 @@ export function SolarStory() {
   const root = useRef<HTMLElement>(null);
   const [phase, setPhase] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const authenticated = useAuthStatus() === "authenticated";
 
   useEffect(() => {
     const section = root.current;
@@ -86,7 +88,7 @@ export function SolarStory() {
           <p className="scene-eyebrow">A roof can be a source of energy</p>
           <h1>{scenes[phase].title}</h1>
           <p className="scene-subtitle">{scenes[phase].detail}</p>
-          <Link href="/planner" className="scene-primary-cta">Design My Solar System <ArrowRight size={17} aria-hidden="true"/></Link>
+          {authenticated && <Link href="/planner" className="scene-primary-cta">Design My Solar System <ArrowRight size={17} aria-hidden="true"/></Link>}
           <button type="button" className="scene-secondary-cta" onClick={exploreEnergyFlow}>Explore the Energy Flow <ArrowDown size={16} aria-hidden="true"/></button>
         </div>
         <div className="scene-state-label" role="status">{["DAY · GENERATE", "EVENING · STORE", "NIGHT · USE"][phase]}</div>
@@ -100,6 +102,6 @@ export function SolarStory() {
         <ol><li><span><House size={20}/></span><strong>Choose your home</strong><p>Use the sample property or enter approximate roof dimensions.</p></li><li><span><PanelsTopLeft size={20}/></span><strong>Place your panels</strong><p>Adjust a schematic layout and tell us about your energy use.</p></li><li><span><ChartNoAxesCombined size={20}/></span><strong>See your estimate</strong><p>Explore modeled generation, cost, savings, and next steps.</p></li></ol>
       </div>
     </section>
-    <section className="home-closing" id="about"><p className="landing-eyebrow">A free local-first demo</p><h2>Your roof. Your energy. Your plan.</h2><p>Start with sample data. No account, cloud service, or AI subscription needed.</p><Link href="/planner" className="scene-primary-cta">Build My Solar <ArrowRight size={17}/></Link><Link href="/assessment?scenario=balanced#dashboard" className="home-sample-link">Or open the sample assessment</Link></section>
+    <section className="home-closing" id="about"><p className="landing-eyebrow">A free local-first demo</p><h2>Your roof. Your energy. Your plan.</h2><p>Solar calculations run on the device using your inputs.</p>{authenticated && <Link href="/planner" className="scene-primary-cta">Build My Solar <ArrowRight size={17}/></Link>}<Link href="/assessment?scenario=balanced#dashboard" className="home-sample-link">Or open the sample assessment</Link></section>
   </>;
 }

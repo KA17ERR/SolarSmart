@@ -86,11 +86,3 @@ export async function updatePasswordAction(_previous: AuthActionState, data: For
   if (error) return { error: "We could not update the password. Request a fresh recovery link and try again." };
   redirect("/dashboard?password=updated");
 }
-
-export async function logoutAction() {
-  if (hasSupabaseConfiguration()) {
-    const supabase = await createSupabaseServerClient();
-    await supabase.auth.signOut();
-  }
-  redirect("/");
-}

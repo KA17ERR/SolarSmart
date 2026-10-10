@@ -5,13 +5,14 @@ const mocks = vi.hoisted(() => ({
   createSupabaseServerClient: vi.fn(),
   redirect: vi.fn((path: string): never => { throw new Error(`REDIRECT:${path}`); }),
   signUp: vi.fn(),
+  signInWithPassword: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/lib/supabase/config", () => ({ hasSupabaseConfiguration: mocks.hasSupabaseConfiguration }));
 vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: mocks.createSupabaseServerClient }));
 
-import { signupAction } from "./auth-actions";
+import { loginAction, signupAction } from "./auth-actions";
 
 function signupData() {
   const data = new FormData();
@@ -53,5 +54,31 @@ describe("signupAction", () => {
     const result = await signupAction({}, signupData());
     expect(result.error).toContain("If you already registered");
     expect(result.error).not.toContain("solar@example.com");
+  });
+});
+
+describe("loginAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.hasSupabaseConfiguration.mockReturnValue(true);
+    mocks.createSupabaseServerClient.mockResolvedValue({ auth: { signInWithPassword: mocks.signInWithPassword } });
+  });
+
+  it("returns a successful login to the protected destination it requested", async () => {
+    mocks.signInWithPassword.mockResolvedValue({ error: null });
+    const data = new FormData();
+    data.set("email", "solar@example.com");
+    data.set("password", "secure-password");
+    data.set("next", "/planner?project=project-1");
+    await expect(loginAction({}, data)).rejects.toThrow("REDIRECT:/planner?project=project-1");
+  });
+
+  it("does not allow an external login redirect", async () => {
+    mocks.signInWithPassword.mockResolvedValue({ error: null });
+    const data = new FormData();
+    data.set("email", "solar@example.com");
+    data.set("password", "secure-password");
+    data.set("next", "//attacker.example");
+    await expect(loginAction({}, data)).rejects.toThrow("REDIRECT:/dashboard");
   });
 });

@@ -15,8 +15,8 @@ function fmt(n: number | null, digits = 0) { return n === null ? "Not estimated"
 function money(n: number | null) { return n === null ? "Not estimated" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n); }
 
 export default async function SavedProjectPage({ params }: { params: Promise<{ id: string }> }) {
-  if (!hasSupabaseConfiguration()) redirect("/dashboard");
   const { id } = await params;
+  if (!hasSupabaseConfiguration()) redirect(`/login?next=${encodeURIComponent(`/dashboard/projects/${id}`)}`);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
