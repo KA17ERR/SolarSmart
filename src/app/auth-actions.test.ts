@@ -41,4 +41,17 @@ describe("signupAction", () => {
     expect(result.error).toContain("Turn off the email confirmation requirement");
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
+
+  it("shows an actionable message when Supabase rejects a weak password", async () => {
+    mocks.signUp.mockResolvedValue({ data: { user: null, session: null }, error: { code: "weak_password" } });
+    const result = await signupAction({}, signupData());
+    expect(result.error).toContain("Choose a stronger password");
+  });
+
+  it("keeps existing-account responses generic", async () => {
+    mocks.signUp.mockResolvedValue({ data: { user: null, session: null }, error: { code: "user_already_exists" } });
+    const result = await signupAction({}, signupData());
+    expect(result.error).toContain("If you already registered");
+    expect(result.error).not.toContain("solar@example.com");
+  });
 });

@@ -22,6 +22,24 @@ function siteOrigin() {
     : "http://localhost:3000";
 }
 function emailOkay(email: string) { return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function signupErrorMessage(code?: string) {
+  switch (code) {
+    case "weak_password":
+      return "Choose a stronger password that meets your Supabase project's password requirements.";
+    case "signup_disabled":
+      return "New account registration is disabled in Supabase. Enable new-user sign-ups in the project's Authentication settings.";
+    case "email_provider_disabled":
+      return "Email and password registration is disabled in Supabase. Enable the Email provider in Authentication settings.";
+    case "over_request_rate_limit":
+    case "over_email_send_rate_limit":
+      return "Supabase is temporarily rate-limiting sign-up attempts. Wait a few minutes and try again.";
+    case "email_exists":
+    case "user_already_exists":
+      return "We couldn't create the account. If you already registered, try signing in or use Forgot password.";
+    default:
+      return "We couldn't create the account. Check the details and try again. If the problem continues, review the Supabase Authentication settings.";
+  }
+}
 
 export async function loginAction(_previous: AuthActionState, data: FormData): Promise<AuthActionState> {
   if (!hasSupabaseConfiguration()) return { error: "Account sign-in is not configured. You can still use the free demo." };
@@ -43,7 +61,7 @@ export async function signupAction(_previous: AuthActionState, data: FormData): 
   if (password !== confirmation) return { error: "The passwords do not match." };
   const supabase = await createSupabaseServerClient();
   const { data: result, error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: name } } });
-  if (error) return { error: "We could not create that account. Check the details or try again later." };
+  if (error) return { error: signupErrorMessage(error.code) };
   if (result.session) redirect("/dashboard");
   return { error: "Supabase did not start a sign-in session. Turn off the email confirmation requirement in your Supabase project's email auth settings, then try creating the account again." };
 }
