@@ -3,14 +3,14 @@
   color-scheme: dark;
   --color-background: #07070d; --color-background-raised: #0c0c16;
   --color-ink: #f4f1ff; --color-ink-soft: #d4cfea; --color-muted: #aaa3bd; --color-subtle: #171522;
-  --color-paper: #080810; --color-surface: rgb(17 16 29 / 78%); --color-line: rgb(222 210 255 / 16%);
-  --color-glass-strong: rgb(13 12 23 / 90%); --color-glass: rgb(15 14 27 / 76%); --color-glass-soft: rgb(19 17 32 / 58%);
+  --color-paper: #080b10; --color-surface: rgb(17 22 23 / 88%); --color-line: rgb(200 216 202 / 16%);
+  --color-glass-strong: rgb(11 16 19 / 94%); --color-glass: rgb(14 21 22 / 84%); --color-glass-soft: rgb(20 29 29 / 72%);
   --color-primary: #a8c797; --color-primary-hover: #c0d8ad; --color-primary-action: #356b52; --color-primary-action-hover: #285740; --color-primary-soft: rgb(132 178 135 / 17%); --color-accent: #e8c68e;
   --color-secondary-action: #8fc7bb; --color-secondary-action-hover: #b1ddd2; --color-selected: rgb(132 178 135 / 20%); --color-hover: rgb(206 226 201 / 9%);
   --color-chart-generation: #a9cb91; --color-chart-savings: #e7bb78; --color-chart-consumption: #8fc7bb;
   --color-success: #83d6a1; --color-success-bg: rgb(52 138 83 / 20%); --color-warning: #f2c779; --color-warning-bg: rgb(190 133 44 / 19%);
   --color-danger: #ff9f9d; --color-danger-bg: rgb(166 55 61 / 21%); --color-info: #9edcff; --color-info-bg: rgb(52 121 168 / 21%);
-  --glass-border: rgb(221 208 255 / 16%); --glass-blur: 14px; --table-separator: rgb(226 217 255 / 10%);
+  --glass-border: rgb(200 216 202 / 18%); --glass-blur: 14px; --table-separator: rgb(200 216 202 / 12%);
   --chart-axis: #bdc8bd; --chart-grid: rgb(195 215 195 / 14%);
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --text-xs: .8125rem; --text-sm: .9375rem; --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.375rem; --text-2xl: 1.875rem;

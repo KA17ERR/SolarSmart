@@ -1,31 +1,27 @@
 "use client";
 
-import WebThreads from "@/components/solar/web-threads";
+import GhostFibers from "@/components/solar/ghost-fibers";
 
 /** A single persistent decorative layer shared by every App Router route. */
 export function GlobalBackground() {
-  return <WebThreads
-    className="web-threads-global"
-    color1="#315d49"
-    color2="#789875"
-    color3="#d6c69f"
-    speed={0.12}
-    threadCount={3}
-    frequency={5}
-    spread={0.18}
-    taper={1}
-    position={0.5}
-    fanMode="center"
-    glow={0.02}
-    falloff={0.6}
-    thickness={1.1}
-    brightness={0.58}
-    opacity={0.2}
-    mirror
-    shimmer={false}
-    grain
-    grainIntensity={0.02}
-    mouseInteraction={false}
-    mouseStrength={0.1}
+  return <GhostFibers
+    className="ghost-fibers-global"
+    glowColor="#206ef8"
+    speed={0.3}
+    scale={1.5}
+    rotationSpeed={0.49}
+    layers={4}
+    twist={0.12}
+    threads={1}
+    glow={2.05}
+    brightness={2.5}
+    vignette={0.5}
+    rotation={1}
+    waves={0.025}
+    spread={1.05}
+    thickness={1}
+    grain={0.05}
+    mouseInteraction
+    lightMode={false}
   />;
 }

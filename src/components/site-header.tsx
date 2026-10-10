@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown, Home, Menu, Sun, X } from "lucide-react";
@@ -19,6 +19,7 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
   const [active, setActive] = useState(inAssessment || inDashboard ? "dashboard" : inPlanner ? "planner" : "home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasDashboard, setHasDashboard] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   function hrefFor(id: string) {
     if (id === "planner") return "/planner";
@@ -45,13 +46,17 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
   useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !headerRef.current?.contains(event.target)) setMenuOpen(false);
+    };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => { window.removeEventListener("keydown", onKeyDown); document.removeEventListener("pointerdown", onPointerDown); };
   }, [menuOpen]);
 
   return <>
     <a className="skip-link" href="#main-content">Skip to content</a>
-    <header className={`site-header${showMainMenuLink ? " has-main-menu-link" : ""}${accordionOnly ? " accordion-only-header" : ""}`}>
+    <header ref={headerRef} className={`site-header${showMainMenuLink ? " has-main-menu-link" : ""}${accordionOnly ? " accordion-only-header" : ""}`}>
       <div className="site-header-inner">
         {!accordionOnly && <a className="site-brand" href={inAssessment || inPlanner ? "/#home" : "#home"} onClick={() => setMenuOpen(false)} aria-label="SolarSmart home">
           <span className="site-brand-mark"><Sun size={19} aria-hidden="true"/></span>

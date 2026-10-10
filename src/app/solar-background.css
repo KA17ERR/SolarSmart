@@ -1,9 +1,8 @@
 body {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 12% 24%, rgb(80 57 145 / 14%), transparent 36%),
-    radial-gradient(ellipse at 87% 74%, rgb(32 112 142 / 10%), transparent 33%),
-    #07070d;
+    radial-gradient(ellipse at 50% 42%, rgb(32 110 248 / 8%), transparent 58%),
+    linear-gradient(145deg, #080c17 0%, #07070d 56%, #080b16 100%);
 }
 
 .solar-app-content {
@@ -54,23 +53,9 @@ body {
 .route-loading-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .route-loading .ui-skeleton { background: linear-gradient(100deg, rgb(255 255 255 / 3%) 20%, rgb(177 158 255 / 13%) 48%, rgb(255 255 255 / 3%) 76%); background-size: 220% 100%; }
 
-.web-threads-container.web-threads-global {
-  position: fixed;
-  z-index: 0;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-}
-
 @media (max-width: 700px) {
-  .web-threads-global { width: 100vw; height: 100svh; }
   .route-loading-content { grid-template-columns: 1fr; }
   .route-loading-panel { min-height: 210px; }
-}
-
-@media print {
-  .web-threads-container { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

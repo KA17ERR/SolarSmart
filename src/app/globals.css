@@ -723,3 +723,71 @@ body .solar-app-content :is(.date-chip, .breadcrumbs, .form-footer, .metric-head
 body .solar-app-content p { font-size: max(15px, 1em); line-height: 1.6; }
 body .solar-app-content :is(h3, h4) { font-size: max(17px, 1em); line-height: 1.35; }
 body .solar-app-content :is(.landing-eyebrow, .eyebrow, .nav-card-kicker, .field-hint, .field-error, .ui-field small, .planner-field small, .planner-progress, .step-copy, .source-note, .comparison-disclaimer, .live-plan-disclaimer, .planner-privacy, .wizard-privacy-note, .trust-note, .report-preview-note, .roof-photo-help) { font-size: max(13px, 1em); }
+
+/* Shared finish: charcoal glass and solar green accents across the navigation. */
+.site-header {
+  border-color: rgb(196 212 197 / 18%);
+  background: rgb(8 15 17 / 82%);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+.site-footer {
+  border-color: rgb(196 212 197 / 16%);
+  background: rgb(9 15 16 / 86%);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+.card-nav-content {
+  border-color: rgb(196 212 197 / 20%);
+  background: rgb(10 17 18 / 96%);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 46%);
+}
+.nav-card,
+.nav-card:nth-child(2),
+.nav-card-accent {
+  border-color: rgb(196 212 197 / 14%);
+  background: linear-gradient(145deg, rgb(24 34 32 / 97%), rgb(12 19 20 / 99%));
+}
+.nav-card-kicker,
+.footer-dock svg { color: #b4d39e; }
+.nav-card-link { color: #d4e3c8; }
+.nav-card:hover, .nav-card:focus-visible, .nav-card.active,
+.footer-dock a:hover, .footer-dock .footer-dock-about:hover {
+  border-color: rgb(168 199 151 / 48%);
+  background-color: rgb(72 105 71 / 24%);
+}
+.footer-dock { border-color: rgb(196 212 197 / 18%); background: rgb(255 255 255 / 4%); }
+.footer-dock a:hover, .footer-dock .footer-dock-about:hover { color: var(--color-ink); }
+.solar-story .site-header-inner {
+  border-bottom: 1px solid rgb(196 212 197 / 13%);
+  background: linear-gradient(180deg, rgb(8 15 17 / 78%), rgb(8 15 17 / 38%) 76%, transparent);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+.home-steps {
+  position: relative;
+  isolation: isolate;
+  border-top: 1px solid rgb(197 218 197 / 12%);
+  background: linear-gradient(180deg, rgb(8 15 26 / 96%) 0%, rgb(11 21 27 / 98%) 45%, rgb(14 31 27 / 98%) 100%);
+  color: #f2f5ef;
+}
+.home-steps h2 { color: #f2f5ef; }
+.home-steps li { border-color: rgb(196 212 197 / 17%); }
+.home-steps li > span { background: rgb(157 190 131 / 16%); color: #c6dda9; }
+.home-steps li strong { color: #eaf1e5; }
+.home-steps li p { color: #bdc9c0; }
+.home-closing { background: linear-gradient(180deg, rgb(14 31 27 / 98%), #0c211a); }
+.auth-demo-note { border-color: rgb(168 199 151 / 24%); background: rgb(75 107 71 / 13%); color: #c8dcb6; }
+.auth-demo-note p { color: #d1dacf; }
+.auth-demo-note code { color: #e1edcf; overflow-wrap: anywhere; }
+.auth-resend-form { display: grid; gap: 10px; margin-top: 14px; }
+.auth-resend-form label { display: grid; gap: 7px; color: var(--color-ink-soft); font-size: 13px; font-weight: 650; }
+.auth-resend-form input { min-height: 44px; border: 1px solid var(--glass-border); border-radius: var(--radius-sm); background: rgb(8 12 14 / 92%); padding: 9px 11px; color: var(--color-ink); }
+.auth-resend-button { min-height: 42px; border: 1px solid var(--glass-border); border-radius: var(--radius-sm); background: var(--color-glass-soft); color: var(--color-ink-soft); font-size: 13px; font-weight: 700; }
+.auth-resend-button:hover { border-color: rgb(168 199 151 / 42%); background: var(--color-selected); color: var(--color-ink); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header { background: #0a1113; }
+  .site-footer { background: #0b1213; }
+  .card-nav-content { background: #0a1113; }
+}
+@media (max-width: 760px) {
+  .card-nav-content { max-height: min(72vh, 620px); overflow-y: auto; overscroll-behavior: contain; }
+  .solar-story .site-header-inner { min-height: 64px; }
+}

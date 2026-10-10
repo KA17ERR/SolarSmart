@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { loginAction, signupAction, forgotPasswordAction, updatePasswordAction, type AuthActionState } from "@/app/auth-actions";
+import { loginAction, signupAction, forgotPasswordAction, updatePasswordAction, resendSignupVerificationAction, type AuthActionState } from "@/app/auth-actions";
 
 const initial: AuthActionState = {};
 
@@ -26,13 +26,26 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
 
 export function SignupForm() {
   const [state, action, pending] = useActionState(signupAction, initial);
-  return <form action={action} className="auth-form">
+  return <>
+  <form action={action} className="auth-form">
     <label>Name<input type="text" name="name" autoComplete="name" maxLength={80} required/></label>
     <label>Email address<input type="email" name="email" autoComplete="email" maxLength={254} required/></label>
     <label>Password<PasswordInput name="password" autoComplete="new-password" minLength={8}/></label>
     <label>Confirm password<PasswordInput name="confirmPassword" autoComplete="new-password" minLength={8}/></label>
     {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
     <button type="submit" disabled={pending}>{pending ? "Creating account…" : "Create account"}</button>
+  </form>
+  {state.message && <><p className="auth-form-feedback" role="status">{state.message}</p><ResendVerificationForm/></>}
+  </>;
+}
+
+function ResendVerificationForm() {
+  const [state, action, pending] = useActionState(resendSignupVerificationAction, initial);
+  return <form action={action} className="auth-resend-form">
+    <label>Resend verification email<input type="email" name="email" autoComplete="email" maxLength={254} required/></label>
+    {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
+    {state.message && <p className="auth-form-feedback" role="status">{state.message}</p>}
+    <button type="submit" className="auth-resend-button" disabled={pending}>{pending ? "Sending…" : "Resend verification email"}</button>
   </form>;
 }
 
