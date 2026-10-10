@@ -689,3 +689,8 @@ body .solar-app-content :is(.date-chip, .breadcrumbs, .form-footer, .metric-head
   .roof-type-option { min-height: 142px; }
   .roof-type-option img { height: 92px; }
 }
+
+/* Keep descriptive copy and secondary headings comfortably readable. */
+body .solar-app-content p { font-size: max(15px, 1em); line-height: 1.6; }
+body .solar-app-content :is(h3, h4) { font-size: max(17px, 1em); line-height: 1.35; }
+body .solar-app-content :is(.landing-eyebrow, .eyebrow, .nav-card-kicker, .field-hint, .field-error, .ui-field small, .planner-field small, .planner-progress, .step-copy, .source-note, .comparison-disclaimer, .live-plan-disclaimer, .planner-privacy, .wizard-privacy-note, .trust-note, .report-preview-note, .roof-photo-help) { font-size: max(13px, 1em); }
