@@ -12,7 +12,15 @@ function safeNext(value: string) {
   const target = new URL(value, "https://solarsmart.invalid");
   return target.origin === "https://solarsmart.invalid" ? `${target.pathname}${target.search}${target.hash}` : "/dashboard";
 }
-function siteOrigin() { return process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000"; }
+function siteOrigin() {
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configuredOrigin) return configuredOrigin.replace(/\/$/, "");
+  // Keep local development local, but never generate localhost email links
+  // from a production deployment if Amplify's variable was omitted.
+  return process.env.NODE_ENV === "production"
+    ? "https://main.d1ifsf72k3a4lj.amplifyapp.com"
+    : "http://localhost:3000";
+}
 function emailOkay(email: string) { return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
 export async function loginAction(_previous: AuthActionState, data: FormData): Promise<AuthActionState> {
