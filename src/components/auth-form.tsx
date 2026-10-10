@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { loginAction, signupAction, resendVerificationAction, forgotPasswordAction, updatePasswordAction, type AuthActionState } from "@/app/auth-actions";
+import { loginAction, signupAction, forgotPasswordAction, updatePasswordAction, type AuthActionState } from "@/app/auth-actions";
 
 const initial: AuthActionState = {};
 
@@ -26,40 +26,14 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
 
 export function SignupForm() {
   const [state, action, pending] = useActionState(signupAction, initial);
-  const [email, setEmail] = useState("");
-  const [resendState, resendAction, resendPending] = useActionState(resendVerificationAction, initial);
-  const [cooldown, setCooldown] = useState(0);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = window.setTimeout(() => setCooldown(current => Math.max(0, current - 1)), 1000);
-    return () => window.clearTimeout(timer);
-  }, [cooldown]);
-
-  return <>
-    <form action={action} className="auth-form">
-      <label>Name<input type="text" name="name" autoComplete="name" maxLength={80} required/></label>
-      <label>Email address<input type="email" name="email" autoComplete="email" maxLength={254} required value={email} onChange={event => setEmail(event.target.value)}/></label>
-      <label>Password<PasswordInput name="password" autoComplete="new-password" minLength={8}/></label>
-      <label>Confirm password<PasswordInput name="confirmPassword" autoComplete="new-password" minLength={8}/></label>
-      {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
-      <button type="submit" disabled={pending}>{pending ? "Creating account…" : "Create account"}</button>
-    </form>
-    {state.message && <section className="verification-panel" aria-labelledby="verification-title">
-      <h2 id="verification-title">Check your email</h2>
-      <p className="auth-form-feedback" role="status">{state.message}</p>
-      <form action={resendAction} className="verification-resend-form" onSubmit={() => setCooldown(60)}>
-        <input type="hidden" name="email" value={email}/>
-        {resendState.message && <p className="auth-form-feedback" role="status">{resendState.message}</p>}
-        {resendState.error && <p className="auth-form-feedback error" role="alert">{resendState.error}</p>}
-        {cooldown > 0 && <p className="verification-cooldown" role="status">You can request another email in {cooldown} seconds.</p>}
-        <button type="submit" className="verification-resend" disabled={!email || resendPending || cooldown > 0}>
-          {resendPending ? "Sending…" : cooldown > 0 ? `Resend available in ${cooldown}s` : "Resend verification email"}
-        </button>
-      </form>
-      <p className="verification-signin">Already verified? <Link href="/login">Sign in</Link></p>
-    </section>}
-  </>;
+  return <form action={action} className="auth-form">
+    <label>Name<input type="text" name="name" autoComplete="name" maxLength={80} required/></label>
+    <label>Email address<input type="email" name="email" autoComplete="email" maxLength={254} required/></label>
+    <label>Password<PasswordInput name="password" autoComplete="new-password" minLength={8}/></label>
+    <label>Confirm password<PasswordInput name="confirmPassword" autoComplete="new-password" minLength={8}/></label>
+    {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
+    <button type="submit" disabled={pending}>{pending ? "Creating account…" : "Create account"}</button>
+  </form>;
 }
 
 export function ForgotPasswordForm() {

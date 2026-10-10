@@ -192,16 +192,6 @@ body .solar-app-content :is(.site-brand-mark, .solar-story .site-brand-mark) { b
 .roof-type-option.selected { box-shadow: 0 0 0 2px rgb(168 199 151 / 25%); }
 .roof-type-option:focus-visible { outline-color: #c4d9ad; }
 
-/* Verification state stays attached to signup and offers a safe resend path. */
-.verification-panel { display: grid; gap: 12px; margin-top: 18px; padding: 16px; border: 1px solid rgb(143 186 144 / 34%); border-radius: 12px; background: rgb(37 62 46 / 34%); }
-.verification-panel h2 { margin: 0; font-size: 18px; }
-.verification-resend-form { display: grid; gap: 10px; }
-.verification-resend { min-height: 42px; border: 1px solid rgb(185 211 174 / 34%); border-radius: 8px; background: rgb(50 83 60 / 68%); color: var(--color-ink); font-size: 14px; font-weight: 700; }
-.verification-resend:hover:not(:disabled) { background: rgb(68 105 75 / 82%); }
-.verification-resend:disabled { cursor: wait; opacity: .68; }
-.verification-signin, .verification-cooldown { margin: 0; color: var(--color-ink-soft); font-size: 13px; }
-.verification-signin a { color: #c4d9ad; font-weight: 700; }
-
 /* Readable type and consistent touch targets across the app's shared UI. */
 body { font-size: 16px; line-height: 1.55; }
 body .solar-app-content :is(.ui-button, .button-primary, .button-secondary, .button-ghost, .scene-secondary-cta, .card-nav-toggle) { font-size: 14px; }
@@ -212,14 +202,13 @@ body .solar-app-content :is(.planner-progress, .planner-field label, .planner-fi
 body .solar-app-content :is(.comparison-heading p, .comparison-section-title p, .choice-copy strong, .choice-copy small, .choice-value, .choice-actions .ui-button, .scenario-list-actions .ui-button, .comparison-empty, .source-note, .comparison-input-grid .ui-field label, .comparison-assumption-control h3, .comparison-assumption-control p, .base-overview > p, .base-overview dt, .base-overview dd, .comparison-metric-table, .comparison-chart p, .recommendation-cards h3, .recommendation-cards p, .comparison-disclaimer) { font-size: 13px; }
 body .solar-app-content :is(.landing-lede, .hero-trust-list, .section-intro > p:last-child, .section-heading > div > p:last-child, .feature-card p, .journey-card p, .demo-scenario-card > p, .demo-values span, .demo-scenario-disclaimer, .trust-card p, .trust-note, .faq-list summary, .faq-list details p, .report-preview-grid span, .report-preview-note) { font-size: 14px; }
 body .solar-app-content :is(.ui-field label, .ui-field small, .ui-checkbox, .property-map-heading > div > p:last-child, .property-map-search label, .property-map-optin p, .property-map-optin button, .property-map-placeholder span, .property-map-placeholder small, .property-map-search button, .property-map-selection button, .planner-field select, .planner-field input, .planner-field small) { font-size: 14px; }
-.ui-button, .auth-form button[type="submit"], .verification-resend { min-height: 44px; }
+.ui-button, .auth-form button[type="submit"] { min-height: 44px; }
 @media (max-width: 680px) {
   .roof-type-options { gap: 8px; }
   .roof-type-option { min-height: 136px; }
   .roof-type-option img { height: 92px; }
   .roof-type-option span { padding-inline: 9px; }
   body .solar-app-content :is(.roof-type-option, .roof-type-option span) { font-size: 13px; }
-  .verification-panel { padding: 14px; }
 }
 .wizard-review-heading { border-color: var(--table-separator); }
 body .solar-app-content option { background: #100f1b; color: #f4f1ff; }
