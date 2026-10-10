@@ -69,7 +69,6 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
           <span className="nav-card-kicker">{["Discover", "Design", "Review"][index]}</span><strong>{link.label}</strong><span className="nav-card-description">{["See how a solar plan comes together.", "Build a plan around your roof and energy use.", "Explore modeled generation, savings, and assumptions."][index]}</span><span className="nav-card-link">Open section <ArrowUpRight size={15} aria-hidden="true" /></span>
         </a>; })}
         {unauthenticated && <><Link className="nav-card auth-nav-card" href="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">Account</span><strong>Log in</strong><span className="nav-card-link">Sign in to your account <ArrowUpRight size={15}/></span></Link><Link className="nav-card auth-nav-card" href="/signup" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">New here?</span><strong>Sign up</strong><span className="nav-card-link">Create an account <ArrowUpRight size={15}/></span></Link></>}
-        {authenticated && <div className="nav-card auth-nav-card"><span className="nav-card-kicker">Account</span><LogoutButton className="nav-card-sign-out" tabIndex={menuOpen ? 0 : -1}/></div>}
       </nav>
     </header>
   </>;
