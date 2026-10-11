@@ -4,15 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 import Image from "next/image";
 import { AlertCircle, LoaderCircle, MapPin, Search } from "lucide-react";
-import { isValidGeocodeQuery, parseGeocodeResults, type GeocodeResult } from "@/lib/map-search";
+import { buildGeoapifyAutocompleteUrl, geocodeFailureMessage, isValidGeocodeQuery, parseGeocodeResults, type GeocodeResult } from "@/lib/map-search";
 
 type SearchHit = GeocodeResult;
 type Coordinates = { lat: number; lng: number };
 const SAMPLE: Coordinates = { lat: 30.2672, lng: -97.7431 };
 const UNRESOLVED: Coordinates = { lat: 20, lng: 0 };
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_API_KEY?.trim() || "";
+const GEOAPIFY_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY?.trim() || "";
 const TILE_URL_OVERRIDE = process.env.NEXT_PUBLIC_MAP_TILE_URL?.trim() || "";
-const GEOCODER = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim() || "https://api.maptiler.com/geocoding";
 const CUSTOM_TILE_ATTRIBUTION = process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION?.trim() || "";
 const TILE_URL = TILE_URL_OVERRIDE
   ? CUSTOM_TILE_ATTRIBUTION ? TILE_URL_OVERRIDE : ""
@@ -27,9 +27,9 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
   const mapElement = useRef<HTMLDivElement>(null);
   const map = useRef<Leaflet.Map | null>(null);
   const marker = useRef<Leaflet.Marker | null>(null);
-  const lastSearch = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
-  const searchLock = useRef(false);
+  const activeQuery = useRef<string | null>(null);
+  const selectedFromSuggestion = useRef<Coordinates | null>(null);
   const initialLocationRef = useRef(initialLocation);
   const skipAutocompleteRef = useRef(false);
   initialLocationRef.current = initialLocation;
@@ -40,6 +40,7 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [noResults, setNoResults] = useState(false);
   const [tilesUnavailable, setTilesUnavailable] = useState(false);
   const [mapLoading, setMapLoading] = useState(true);
   const [activeHit, setActiveHit] = useState(0);
@@ -112,7 +113,9 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
     if (location) {
       if (marker.current) marker.current.setLatLng([location.lat, location.lng]);
       else void import("leaflet").then(L => { if (map.current && !marker.current) marker.current = L.marker([location.lat, location.lng], { draggable: true, title: "Selected approximate property location", keyboard: true, alt: "Selected approximate property location", icon: L.divIcon({ className: "solar-map-pin", html: '<span aria-hidden="true"></span>', iconSize: [24, 30], iconAnchor: [12, 28] }) }).addTo(map.current); });
-      map.current.flyTo([location.lat, location.lng], 15, { duration: 0.6 });
+      const selectedBySearch = selectedFromSuggestion.current;
+      if (selectedBySearch?.lat === location.lat && selectedBySearch.lng === location.lng) selectedFromSuggestion.current = null;
+      else map.current.flyTo([location.lat, location.lng], 15, { duration: 0.6 });
       setSelected(location); setSelectedResolved(true); setSelectedLabel(initialLabel || "Selected property location");
     } else {
       marker.current?.remove(); marker.current = null;
@@ -123,56 +126,46 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
 
   const search = useCallback(async (queryText: string) => {
     const text = queryText.trim();
-    if (!isValidGeocodeQuery(text)) { setError("Enter a city, postcode, landmark, or address between 2 and 120 characters."); return; }
-    if (searchLock.current) return;
-    searchLock.current = true;
-    setBusy(true); setError(""); setHits([]);
-    const wait = Math.max(0, 1100 - (Date.now() - lastSearch.current));
-    if (wait) await new Promise(resolve => setTimeout(resolve, wait));
+    if (!isValidGeocodeQuery(text)) { setError("Enter at least three characters, such as an Indian PIN code, locality, or landmark."); return; }
+    if (!GEOAPIFY_KEY) { setError("Address suggestions need a Geoapify API key. Satellite imagery uses its separate MapTiler key."); return; }
+    if (activeRequest.current && activeQuery.current === text) return;
+    activeRequest.current?.abort();
     const controller = new AbortController();
     activeRequest.current = controller;
+    activeQuery.current = text;
+    setBusy(true); setError(""); setNoResults(false); setHits([]);
     const timeout = window.setTimeout(() => controller.abort(), 9000);
-    lastSearch.current = Date.now();
     try {
-      if (!MAPTILER_KEY && !process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim()) {
-        return;
-      }
-      const customGeocoder = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim();
-      const url = customGeocoder
-        ? new URL(customGeocoder)
-        : new URL(`${GEOCODER.replace(/\/$/, "")}/${encodeURIComponent(text)}.json`);
-      if (customGeocoder) {
-        url.searchParams.set("q", text);
-        url.searchParams.set("format", "jsonv2");
-      } else {
-        url.searchParams.set("autocomplete", "true");
-        url.searchParams.set("key", MAPTILER_KEY);
-      }
-      url.searchParams.set("limit", "5");
+      const url = buildGeoapifyAutocompleteUrl(text, GEOAPIFY_KEY);
       const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error("search unavailable");
+      if (!response.ok) throw new Error(`search unavailable (${response.status})`);
       const result: unknown = await response.json();
       const matches = parseGeocodeResults(result);
-      if (!matches.length) { setError("No locations found. Try a nearby city or postcode, or continue with the sample property."); return; }
+      if (activeRequest.current !== controller) return;
+      if (!matches.length) { setNoResults(true); return; }
       setHits(matches);
       setActiveHit(0);
-    } catch {
-      if (controller.signal.aborted) setError("Location search timed out or was canceled. Retry, use a broader place name, or continue with the sample property.");
-      else setError("Location search is temporarily unavailable. Check your connection and retry, or continue with the sample property.");
+    } catch (cause) {
+      if (activeRequest.current !== controller) return;
+      const status = cause instanceof Error ? Number(cause.message.match(/\((\d+)\)$/)?.[1]) : 0;
+      setError(geocodeFailureMessage(Number.isFinite(status) && status > 0 ? status : null, controller.signal.aborted));
     } finally {
       window.clearTimeout(timeout);
-      if (activeRequest.current === controller) activeRequest.current = null;
-      searchLock.current = false;
-      setBusy(false);
+      if (activeRequest.current === controller) { activeRequest.current = null; activeQuery.current = null; setBusy(false); }
     }
   }, []);
 
   useEffect(() => {
     const text = query.trim();
     if (skipAutocompleteRef.current) { skipAutocompleteRef.current = false; return; }
-    if (text.length < 3) { setHits([]); setError(""); return; }
-    const timer = window.setTimeout(() => { activeRequest.current?.abort(); void search(text); }, 1000);
-    return () => { window.clearTimeout(timer); activeRequest.current?.abort(); };
+    if (text.length < 3) { activeRequest.current?.abort(); activeRequest.current = null; setBusy(false); setHits([]); setError(""); setNoResults(false); return; }
+    const timer = window.setTimeout(() => { void search(text); }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      activeRequest.current?.abort();
+      activeRequest.current = null;
+      activeQuery.current = null;
+    };
   }, [query, search]);
 
   function selectHit(hit: SearchHit) {
@@ -182,7 +175,9 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
     setQuery(hit.displayName);
     setError("");
     updateMarker(coordinates);
-    map.current?.flyTo([coordinates.lat, coordinates.lng], 16, { duration: 0.8 });
+    selectedFromSuggestion.current = coordinates;
+    map.current?.flyTo([coordinates.lat, coordinates.lng], hit.zoom, { duration: 0.55 });
+    onConfirm({ ...coordinates, label: hit.displayName });
   }
 
   function useSample() {
@@ -195,20 +190,21 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
   }
 
   return <section className="property-map-card" aria-labelledby="property-map-title">
-    <div className="property-map-heading"><div><p className="landing-eyebrow">Optional location search</p><h3 id="property-map-title">Find an approximate property location</h3><p>MapTiler suggestions appear after you type at least three characters. No device location is requested. A marker does not identify a specific building.</p></div><MapPin aria-hidden="true" size={19}/></div>
+    <div className="property-map-heading"><div><p className="landing-eyebrow">Optional location search</p><h3 id="property-map-title">Find an approximate property location</h3><p>Search Indian PIN codes, localities, streets, cities, and landmarks; international locations are also supported. No device location is requested. A marker does not identify a specific building.</p></div><MapPin aria-hidden="true" size={19}/></div>
     <div className="property-map-search">
       <label htmlFor="property-location-search">Search by city, postcode, landmark, or address</label>
-      <div><input id="property-location-search" role="combobox" aria-autocomplete="list" aria-expanded={hits.length > 0} aria-controls="property-location-results" aria-activedescendant={hits.length ? `property-location-option-${activeHit}` : undefined} value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === "ArrowDown" && hits.length) { event.preventDefault(); setActiveHit(index => (index + 1) % hits.length); } else if (event.key === "ArrowUp" && hits.length) { event.preventDefault(); setActiveHit(index => (index - 1 + hits.length) % hits.length); } else if (event.key === "Enter" && hits.length) { event.preventDefault(); selectHit(hits[activeHit]); } else if (event.key === "Escape") { setHits([]); setError(""); } else if (event.key === "Enter") { event.preventDefault(); void search(query); } }} maxLength={120} placeholder="e.g. Austin, TX" autoComplete="off"/><button type="button" onClick={() => void search(query)} disabled={busy || query.trim().length < 2}>{busy ? <><LoaderCircle size={15} className="spin"/> Searching</> : <><Search size={15}/> Search</>}</button></div>
+      <div><input id="property-location-search" role="combobox" aria-autocomplete="list" aria-expanded={hits.length > 0} aria-busy={busy} aria-controls="property-location-results" aria-activedescendant={hits.length ? `property-location-option-${activeHit}` : undefined} value={query} onChange={event => { setQuery(event.target.value); setHits([]); setError(""); setNoResults(false); }} onKeyDown={event => { if (event.key === "ArrowDown" && hits.length) { event.preventDefault(); setActiveHit(index => (index + 1) % hits.length); } else if (event.key === "ArrowUp" && hits.length) { event.preventDefault(); setActiveHit(index => (index - 1 + hits.length) % hits.length); } else if (event.key === "Enter" && hits.length) { event.preventDefault(); selectHit(hits[activeHit]); } else if (event.key === "Escape") { setHits([]); setError(""); setNoResults(false); } else if (event.key === "Enter") { event.preventDefault(); void search(query); } }} maxLength={120} placeholder="e.g. 560035 or Indiranagar, Bengaluru" autoComplete="off"/><button type="button" onClick={() => void search(query)} disabled={busy || query.trim().length < 3}>{busy ? <><LoaderCircle size={15} className="spin"/> Searching</> : <><Search size={15}/> Search</>}</button></div>
     </div>
     {mapLoading && <p role="status" className="property-map-status"><LoaderCircle size={15} className="spin"/>Loading satellite imagery…</p>}
-    {busy && <p role="status" className="property-map-status">Searching map locations…</p>}
+    {busy && <p role="status" className="property-map-status"><LoaderCircle size={15} className="spin"/>Searching locations…</p>}
     {error && <p role="alert" className="property-map-error"><AlertCircle size={15}/>{error}</p>}
+    {noResults && <p role="status" className="property-map-status">No matching locations. Try a nearby locality, PIN code, or landmark.</p>}
     {hits.length > 0 && <ul id="property-location-results" role="listbox" className="property-map-results" aria-label="Location search suggestions">{hits.map((hit, index) => <li key={`${hit.lat}-${hit.lng}-${index}`}><button id={`property-location-option-${index}`} type="button" role="option" aria-selected={activeHit === index} onMouseEnter={() => setActiveHit(index)} onClick={() => selectHit(hit)}>{hit.displayName}</button></li>)}</ul>}
     <div className="property-map-frame"><div className="property-map" ref={mapElement} role="application" aria-label="Interactive satellite hybrid map. Pan and zoom the map, click to reposition the marker, or drag the marker." />
       {USES_MAPTILER_TILES && <a className="property-map-provider-logo" href="https://www.maptiler.com/" target="_blank" rel="noreferrer" aria-label="Map imagery by MapTiler"><Image src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" width={74} height={16} unoptimized /></a>}
     </div>
-    {(!TILE_URL || tilesUnavailable) && <div role="status" className="property-map-imagery-state"><AlertCircle size={17} aria-hidden="true"/><span>{!TILE_URL ? TILE_URL_OVERRIDE ? <>A custom tile URL is configured without attribution. Add <code>NEXT_PUBLIC_MAP_TILE_ATTRIBUTION</code> before enabling it.</> : <>Satellite imagery and address suggestions require <code>NEXT_PUBLIC_MAPTILER_API_KEY</code>. Add your MapTiler public key to <code>.env.local</code> and restart the app. The marker and manual roof inputs remain available.</> : <>Satellite tiles could not load. Check the key, allowed website origins, provider quota, and network connection.</>}</span></div>}
+    {(!TILE_URL || tilesUnavailable) && <div role="status" className="property-map-imagery-state"><AlertCircle size={17} aria-hidden="true"/><span>{!TILE_URL ? TILE_URL_OVERRIDE ? <>A custom tile URL is configured without attribution. Add <code>NEXT_PUBLIC_MAP_TILE_ATTRIBUTION</code> before enabling it.</> : <>Satellite imagery needs <code>NEXT_PUBLIC_MAPTILER_API_KEY</code>; address suggestions need <code>NEXT_PUBLIC_GEOAPIFY_API_KEY</code>. Add each public key to <code>.env.local</code> and restart the app. Manual roof planning remains available.</> : <>Satellite tiles could not load. Check the MapTiler key, allowed website origins, provider quota, and network connection.</>}</span></div>}
     <div className="property-map-selection"><div><strong>Approximate point</strong><span>{selectedLabel}</span><small>{selectedResolved ? `${selected.lat.toFixed(5)}, ${selected.lng.toFixed(5)} · selected approximate coordinates` : "Choose a result or select a point on the map before confirming."}</small></div><div><button type="button" onClick={useSample}>Use sample property</button><button type="button" className="property-map-confirm" disabled={!selectedResolved} onClick={() => onConfirm({ ...selected, label: selectedLabel })}>Confirm location</button></div></div>
-    <p className="property-map-attribution-note">Satellite imagery and address suggestions use MapTiler when the configured key is available. The key is public in browser requests and must be restricted to this website’s allowed origins. Searching sends the text you type to MapTiler; device geolocation is never requested. Satellite imagery is for visual context only and does not measure the roof.</p>
+    <p className="property-map-attribution-note">Satellite imagery uses MapTiler and address suggestions use Geoapify; configure and restrict each public key separately to this website’s allowed origins. Search text is sent to Geoapify. <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer">Powered by Geoapify</a> · Device geolocation is never requested. Satellite imagery is for visual context only and does not measure the roof.</p>
   </section>;
 }
