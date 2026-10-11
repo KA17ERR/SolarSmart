@@ -27,7 +27,7 @@ export default async function DashboardInsightPage({ params, searchParams }: { p
   const customInputs = parseInputs(query.inputs);
   const inputs = customInputs ?? scenario.inputs;
   const result = calculateSolar(inputs);
-  const dashboardHref = `/assessment?scenario=${scenario.id}${customInputs ? `&inputs=${encodeURIComponent(JSON.stringify(customInputs))}` : ""}#dashboard`;
+  const dashboardHref = `/assessment?scenario=${scenario.id}${customInputs ? `&inputs=${encodeURIComponent(JSON.stringify(customInputs))}` : ""}#dashboard-gallery`;
 
   return <div className="app-shell dashboard-insight-shell">
     <SiteHeader />

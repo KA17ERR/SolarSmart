@@ -37,7 +37,7 @@ export function SampleReportDialog() {
       <p className="report-preview-note">Assumptions include an illustrative $0.15/kWh rate, 850 sq ft sample roof, 5.2 sun-hours/day, and 0% incentive. Values are estimates, not quotes or guarantees.</p>
       <div className="report-preview-actions">
         <Button onClick={download}><Download size={15} aria-hidden="true"/> Download complete report</Button>
-        <ButtonLink href="/assessment?scenario=balanced#dashboard" variant="quiet" onClick={() => setOpen(false)}>Open live assessment →</ButtonLink>
+        <ButtonLink href="/assessment?scenario=balanced#dashboard-gallery" variant="quiet" onClick={() => setOpen(false)}>Open live assessment →</ButtonLink>
       </div>
     </Dialog>
   </>;

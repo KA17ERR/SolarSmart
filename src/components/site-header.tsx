@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronDown, Home, Menu, Sun, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
 import { LogoutButton, useAuthStatus } from "@/components/auth-state";
-import { getNavigationVisibility, getVisibleNavigationLinks, MAIN_NAVIGATION_LINKS } from "@/lib/navigation";
+import { getHomeHref, getNavigationHref, getNavigationVisibility, getVisibleNavigationLinks, MAIN_NAVIGATION_LINKS } from "@/lib/navigation";
 
 export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: { showMainMenuLink?: boolean; accordionOnly?: boolean }) {
   const pathname = usePathname();
@@ -25,14 +25,6 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
   const [portalReady, setPortalReady] = useState(false);
 
   useEffect(() => { setPortalReady(true); }, []);
-
-  function hrefFor(id: string) {
-    if (id === "planner") return "/planner";
-    if (id === "assessment") return "/assessment";
-    if (id === "dashboard") return inAssessment && hasDashboard ? "#dashboard" : "/dashboard";
-    if (id === "how-it-works" && !inAssessment && !inPlanner) return "#how-it-works";
-    return `/#${id}`;
-  }
 
   useEffect(() => {
     const dashboardAvailable = !!document.getElementById("dashboard");
@@ -68,11 +60,11 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
     <a className="skip-link" href="#main-content">Skip to content</a>
     <header ref={headerRef} className={`site-header${showMainMenuLink ? " has-main-menu-link" : ""}${accordionOnly ? " accordion-only-header" : ""}`}>
       <div className="site-header-inner">
-        {!accordionOnly && <a className="site-brand" href={inAssessment || inPlanner ? "/#home" : "#home"} onClick={() => setMenuOpen(false)} aria-label="SolarSmart home">
+        {!accordionOnly && <a className="site-brand" href={getHomeHref(pathname)} onClick={() => setMenuOpen(false)} aria-label="SolarSmart home">
           <span className="site-brand-mark"><Sun size={19} aria-hidden="true"/></span>
           <span>Solar<span className="site-brand-light">Smart</span><small>ROOFTOP SOLAR, MADE CLEAR</small></span>
         </a>}
-        {showMainMenuLink && <Link className="header-main-menu-link" href="/#home" aria-label="Main Menu"><Home size={15} aria-hidden="true"/><span>Main Menu</span></Link>}
+        {showMainMenuLink && <Link className="header-main-menu-link" href={getHomeHref(pathname)} aria-label="Main Menu"><Home size={15} aria-hidden="true"/><span>Main Menu</span></Link>}
         <button type="button" className={`card-nav-toggle${menuOpen ? " open" : ""}`} aria-label={menuOpen ? "Close Explore navigation" : "Explore navigation"} aria-expanded={menuOpen} aria-controls="main-card-navigation" onClick={() => setMenuOpen(open => !open)}>
           <Menu className="card-nav-menu-icon" size={18} aria-hidden="true" />{menuOpen ? <X className="card-nav-mobile-close" size={18} aria-hidden="true" /> : null}<span className="card-nav-label">Explore</span><ChevronDown className="card-nav-chevron" size={15} aria-hidden="true" />
         </button>
@@ -81,7 +73,7 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
       {authenticated && <><Link className="header-login" href="/dashboard">Energy Dashboard</Link><ButtonLink className="header-cta" href="/planner">Build My Solar <span aria-hidden="true">→</span></ButtonLink><LogoutButton className="header-login header-sign-out"/></>}
       </div>
       {portalReady && createPortal(<nav ref={menuRef} id="main-card-navigation" className={`card-nav-content${menuOpen ? " open" : ""}`} aria-label="Main navigation" aria-hidden={!menuOpen}>
-        {visibleLinks.map(link => { const index = MAIN_NAVIGATION_LINKS.findIndex(item => item.id === link.id); const kicker = link.id === "how-it-works" ? "Discover" : link.id === "planner" ? "Design" : link.id === "assessment" ? "Review" : "Explore"; const description = link.id === "how-it-works" ? "See how a solar plan comes together." : link.id === "planner" ? "Build a plan around your roof and energy use." : link.id === "assessment" ? "Review an estimate with your project inputs." : "Explore modeled generation, savings, and assumptions."; return <a key={link.id} href={hrefFor(link.id)} className={`nav-card${index === MAIN_NAVIGATION_LINKS.length - 1 ? " nav-card-accent" : ""}${active === link.id ? " active" : ""}`} aria-current={active === link.id ? "location" : undefined} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} onKeyDown={event => { if (event.key === "Escape") setMenuOpen(false); }}>
+        {visibleLinks.map(link => { const index = MAIN_NAVIGATION_LINKS.findIndex(item => item.id === link.id); const kicker = link.id === "how-it-works" ? "Discover" : link.id === "planner" ? "Design" : link.id === "assessment" ? "Review" : "Explore"; const description = link.id === "how-it-works" ? "See how a solar plan comes together." : link.id === "planner" ? "Build a plan around your roof and energy use." : link.id === "assessment" ? "Review an estimate with your project inputs." : "Explore modeled generation, savings, and assumptions."; return <a key={link.id} href={getNavigationHref(link.id, pathname, hasDashboard)} className={`nav-card${index === MAIN_NAVIGATION_LINKS.length - 1 ? " nav-card-accent" : ""}${active === link.id ? " active" : ""}`} aria-current={active === link.id ? "location" : undefined} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} onKeyDown={event => { if (event.key === "Escape") setMenuOpen(false); }}>
           <span className="nav-card-kicker">{kicker}</span><strong>{link.label}</strong><span className="nav-card-description">{description}</span><span className="nav-card-link">Open section <ArrowUpRight size={15} aria-hidden="true" /></span>
         </a>; })}
         {unauthenticated && <><Link className="nav-card auth-nav-card" href="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">Account</span><strong>Log in</strong><span className="nav-card-link">Sign in to your account <ArrowUpRight size={15}/></span></Link><Link className="nav-card auth-nav-card" href="/signup" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">New here?</span><strong>Sign up</strong><span className="nav-card-link">Create an account <ArrowUpRight size={15}/></span></Link></>}
