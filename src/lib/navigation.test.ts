@@ -7,7 +7,7 @@ describe("authenticated main navigation", () => {
   });
 
   it("shows the planner and energy dashboard to authenticated users", () => {
-    expect(getVisibleNavigationLinks(true).map(link => link.id)).toEqual(["how-it-works", "planner", "dashboard"]);
+    expect(getVisibleNavigationLinks(true).map(link => link.id)).toEqual(["how-it-works", "planner", "assessment", "dashboard"]);
   });
 
   it("keeps both authentication action sets hidden while session restoration is unresolved", () => {

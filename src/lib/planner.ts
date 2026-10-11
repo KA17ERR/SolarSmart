@@ -5,6 +5,7 @@ export type RoofFacing = "south" | "south-east" | "south-west" | "east" | "west"
 export type ShadingCategory = "low" | "moderate" | "high";
 export type PlannerInputs = {
   place: string;
+  location?: { lat: number; lng: number };
   property: string;
   roofWidthM: number;
   roofLengthM: number;
@@ -52,6 +53,11 @@ export function isPlannerInputs(value: unknown): value is PlannerInputs {
   const numeric = ["roofWidthM", "roofLengthM", "panelWatts", "panelWidthM", "panelLengthM", "monthlyConsumptionKwh", "utilityRateUsdPerKwh", "peakSunHoursPerDay", "roofTiltDegrees", "installedCostUsdPerKw"];
   if (numeric.some(key => typeof input[key] !== "number" || !Number.isFinite(input[key]))) return false;
   if (typeof input.place !== "string" || !input.place.trim() || input.place.length > 120 || typeof input.property !== "string" || !input.property.trim() || input.property.length > 60) return false;
+  if (input.location !== undefined) {
+    if (typeof input.location !== "object" || input.location === null) return false;
+    const location = input.location as Record<string, unknown>;
+    if (!Number.isFinite(location.lat) || Number(location.lat) < -90 || Number(location.lat) > 90 || !Number.isFinite(location.lng) || Number(location.lng) < -180 || Number(location.lng) > 180) return false;
+  }
   if (!["landscape", "portrait"].includes(String(input.panelOrientation)) || !["south", "south-east", "south-west", "east", "west", "north"].includes(String(input.roofFacing)) || !["low", "moderate", "high"].includes(String(input.shading))) return false;
   if (![450, 550].includes(Number(input.panelWatts)) || Number(input.panelWidthM) < .5 || Number(input.panelWidthM) > 3 || Number(input.panelLengthM) < .5 || Number(input.panelLengthM) > 4 || Number(input.roofTiltDegrees) < 0 || Number(input.roofTiltDegrees) > 60) return false;
   if (input.batteryCapacityKwh !== undefined && ![0, 5, 10].includes(Number(input.batteryCapacityKwh))) return false;

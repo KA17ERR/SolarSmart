@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import SpecularButton from "@/components/animations/SpecularButton";
 import { loginAction, signupAction, forgotPasswordAction, updatePasswordAction, resendSignupVerificationAction, type AuthActionState } from "@/app/auth-actions";
 
 const initial: AuthActionState = {};
@@ -20,7 +21,7 @@ export function LoginForm({ next = "/dashboard" }: { next?: string }) {
     <label>Password<PasswordInput name="password" autoComplete="current-password"/></label>
     <div className="auth-form-row"><Link href="/forgot-password">Forgot password?</Link></div>
     {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
-    <button type="submit" disabled={pending}>{pending ? "Signing in…" : "Sign in"}</button>
+    <SpecularButton type="submit" disabled={pending} size="md" radius={9} lineColor="#abd3f4" baseColor="#2865a5" intensity={0.82} idleIntensity={0.2}>{pending ? "Signing in…" : "Sign in"}</SpecularButton>
   </form>;
 }
 
@@ -33,7 +34,7 @@ export function SignupForm() {
     <label>Password<PasswordInput name="password" autoComplete="new-password" minLength={8}/></label>
     <label>Confirm password<PasswordInput name="confirmPassword" autoComplete="new-password" minLength={8}/></label>
     {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
-    <button type="submit" disabled={pending}>{pending ? "Creating account…" : "Create account"}</button>
+    <SpecularButton type="submit" disabled={pending} size="md" radius={9} lineColor="#abd3f4" baseColor="#2865a5" intensity={0.82} idleIntensity={0.2}>{pending ? "Creating account…" : "Create account"}</SpecularButton>
   </form>
   {state.message && <><p className="auth-form-feedback" role="status">{state.message}</p><ResendVerificationForm/></>}
   </>;
@@ -45,7 +46,7 @@ function ResendVerificationForm() {
     <label>Resend verification email<input type="email" name="email" autoComplete="email" maxLength={254} required/></label>
     {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
     {state.message && <p className="auth-form-feedback" role="status">{state.message}</p>}
-    <button type="submit" className="auth-resend-button" disabled={pending}>{pending ? "Sending…" : "Resend verification email"}</button>
+    <SpecularButton type="submit" className="auth-resend-button" size="md" radius={9} lineColor="#abd3f4" baseColor="#182a42" disabled={pending}>{pending ? "Sending…" : "Resend verification email"}</SpecularButton>
   </form>;
 }
 
@@ -55,7 +56,7 @@ export function ForgotPasswordForm() {
     <label>Email address<input type="email" name="email" autoComplete="email" maxLength={254} required/></label>
     {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
     {state.message && <p className="auth-form-feedback" role="status">{state.message}</p>}
-    <button type="submit" disabled={pending}>{pending ? "Sending…" : "Send recovery link"}</button>
+    <SpecularButton type="submit" disabled={pending} size="md" radius={9} lineColor="#abd3f4" baseColor="#2865a5" intensity={0.82} idleIntensity={0.2}>{pending ? "Sending…" : "Send recovery link"}</SpecularButton>
   </form>;
 }
 
@@ -65,6 +66,6 @@ export function UpdatePasswordForm() {
     <label>New password<PasswordInput name="password" autoComplete="new-password" minLength={8}/></label>
     <label>Confirm new password<PasswordInput name="confirmPassword" autoComplete="new-password" minLength={8}/></label>
     {state.error && <p className="auth-form-feedback error" role="alert">{state.error}</p>}
-    <button type="submit" disabled={pending}>{pending ? "Updating…" : "Update password"}</button>
+    <SpecularButton type="submit" disabled={pending} size="md" radius={9} lineColor="#abd3f4" baseColor="#2865a5" intensity={0.82} idleIntensity={0.2}>{pending ? "Updating…" : "Update password"}</SpecularButton>
   </form>;
 }

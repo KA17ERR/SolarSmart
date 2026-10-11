@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { SolarInputs } from "@/lib/solar";
+import { AccordionArtwork } from "@/components/solar/accordion-artwork";
 
 export type GalleryItem = { id: string; image: string; label: string; description: string; href: string; alt: string };
 export const ACCORDION_GALLERY_ITEMS: GalleryItem[] = [
@@ -21,7 +21,6 @@ export function nextAccordionGalleryIndex(index: number, key: string): number | 
 /** Visual navigation to dedicated explanation pages for this assessment. */
 export function AccordionGallery({ scenarioId = "balanced", initialInputs }: { scenarioId?: string; initialInputs?: SolarInputs }) {
   const [active, setActive] = useState(0);
-  const [failedImages, setFailedImages] = useState<string[]>([]);
   const panelRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   function onKeyDown(index: number, event: KeyboardEvent<HTMLAnchorElement>) {
     const next = nextAccordionGalleryIndex(index, event.key);
@@ -37,7 +36,7 @@ export function AccordionGallery({ scenarioId = "balanced", initialInputs }: { s
         const query = new URLSearchParams({ scenario: scenarioId });
         if (initialInputs) query.set("inputs", JSON.stringify(initialInputs));
         return <a key={item.id} ref={node => { panelRefs.current[index] = node; }} href={`${item.href}?${query.toString()}`} className={`ag-panel ag-panel-${item.id}${active === index ? " ag-panel-active" : ""}`} aria-label={`${item.label}. ${item.description}`} onClick={() => setActive(index)} onMouseEnter={() => setActive(index)} onFocus={() => setActive(index)} onKeyDown={event => onKeyDown(index, event)}>
-        <span className={`ag-panel-image${failedImages.includes(item.id) ? " ag-panel-image-failed" : ""}`}>{!failedImages.includes(item.id) && <Image src={item.image} alt={item.alt} fill sizes="100vw" unoptimized onError={() => setFailedImages(current => current.includes(item.id) ? current : [...current, item.id])}/>}</span><span className="ag-panel-shade" aria-hidden="true"/><span className="ag-panel-label"><strong>{item.label}</strong><span>{item.description}</span></span><span className="ag-panel-action" aria-hidden="true"><ArrowUpRight size={18}/></span>
+        <span className="ag-panel-image"><AccordionArtwork item={item}/></span><span className="ag-panel-shade" aria-hidden="true"/><span className="ag-panel-label"><strong>{item.label}</strong><span>{item.description}</span></span><span className="ag-panel-action" aria-hidden="true"><ArrowUpRight size={18}/></span>
       </a>;
       })}
     </nav>

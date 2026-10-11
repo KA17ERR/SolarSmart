@@ -1,4 +1,5 @@
 import { DEFAULT_INPUTS, type SolarInputs } from "./solar";
+import { PANEL_LAYOUT_ASSUMPTIONS, type PlannerInputs } from "./planner";
 
 export type AreaUnit = "sq-ft" | "sq-m";
 export type PropertyType = "single-family" | "multi-unit" | "small-business" | "other";
@@ -64,6 +65,29 @@ export const EMPTY_ASSESSMENT_DRAFT: AssessmentDraft = {
   budgetUsd: "",
   priority: "exploring",
 };
+
+/** Prefills the assessment with the nearest supported planner values without doing a location lookup. */
+export function assessmentDraftFromPlanner(input: PlannerInputs): AssessmentDraft {
+  const property = input.property.toLowerCase();
+  const monthlyConsumption = input.monthlyConsumptionKwh;
+  const roofAreaM2 = input.roofWidthM * input.roofLengthM * PANEL_LAYOUT_ASSUMPTIONS.usableRoofPercent / 100;
+  const shading = input.shading === "low" ? "light" : input.shading === "moderate" ? "moderate" : "heavy";
+  const orientation = input.roofFacing === "east" || input.roofFacing === "west" ? "east-west" : input.roofFacing === "north" ? "away-from-equator" : "equator-facing";
+  return {
+    ...EMPTY_ASSESSMENT_DRAFT,
+    cityOrPostcode: input.place.slice(0, 80),
+    propertyType: property.includes("business") ? "small-business" : property.includes("town") ? "other" : "single-family",
+    roofType: input.roofShape === "flat" ? "flat" : "pitched-shingle",
+    usableRoofArea: roofAreaM2.toPrecision(7).replace(/\.?0+$/, ""),
+    areaUnit: "sq-m",
+    energyInputMethod: "monthly-consumption",
+    monthlyBill: String(monthlyConsumption * input.utilityRateUsdPerKwh),
+    monthlyConsumptionKwh: String(Number.isFinite(monthlyConsumption) ? monthlyConsumption : 0),
+    electricityTariff: String(input.utilityRateUsdPerKwh),
+    shading,
+    orientation,
+  };
+}
 
 /** Fictional values for a guided demo only. No local tariffs or solar data are implied. */
 export const DEMO_ASSESSMENT_DRAFT: AssessmentDraft = {

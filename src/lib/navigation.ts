@@ -1,8 +1,9 @@
-export type MainNavigationLink = { label: string; id: "how-it-works" | "planner" | "dashboard" };
+export type MainNavigationLink = { label: string; id: "how-it-works" | "planner" | "assessment" | "dashboard" };
 
 export const MAIN_NAVIGATION_LINKS: MainNavigationLink[] = [
   { label: "How It Works", id: "how-it-works" },
   { label: "Solar Planner", id: "planner" },
+  { label: "Solar Assessment", id: "assessment" },
   { label: "Energy Dashboard", id: "dashboard" },
 ];
 

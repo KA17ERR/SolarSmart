@@ -2,10 +2,12 @@
 
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type HTMLAttributes, type InputHTMLAttributes, type MouseEventHandler, type ReactNode, type SelectHTMLAttributes } from "react";
 import { X } from "lucide-react";
+import SpecularButton from "@/components/animations/SpecularButton";
 
 type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: "sm" | "md" };
-export function Button({ variant = "primary", size = "md", className = "", type = "button", ...props }: ButtonProps) {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: "sm" | "md"; specular?: boolean };
+export function Button({ variant = "primary", size = "md", className = "", type = "button", specular = false, ...props }: ButtonProps) {
+  if (specular) return <SpecularButton type={type} size={size} radius={9} lineColor="#abd3f4" baseColor="#2865a5" intensity={0.82} idleIntensity={0.2} shineSize={8} shineFade={30} thickness={1} glow={0.8} className={`ui-button ui-button-${variant} ui-button-${size} ${className}`.trim()} {...props}/>;
   return <button type={type} className={`ui-button ui-button-${variant} ui-button-${size} ${className}`.trim()} {...props}/>;
 }
 export function ButtonLink({ href, children, className = "", variant = "primary", onClick }: { href: string; children: ReactNode; className?: string; variant?: ButtonVariant; onClick?: MouseEventHandler<HTMLAnchorElement> }) {

@@ -21,14 +21,14 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
   let savedInputsMigrated = false;
   let loadMessage: string | undefined;
   let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
-  let hasUser = false;
+  let authenticatedUserId: string | undefined;
   try {
     supabase = await createSupabaseServerClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
-    hasUser = Boolean(user);
+    authenticatedUserId = user?.id;
   } catch { redirect(`/login?next=${encodeURIComponent(requestedPath)}`); }
-  if (!hasUser) redirect(`/login?next=${encodeURIComponent(requestedPath)}`);
+  if (!authenticatedUserId) redirect(`/login?next=${encodeURIComponent(requestedPath)}`);
   isSignedIn = true;
   if (requestedProjectId && /^[0-9a-f-]{36}$/i.test(requestedProjectId)) {
     try {
@@ -37,5 +37,5 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
       else loadMessage = "The saved project details could not be restored. You can start a new plan.";
     } catch { loadMessage = "We couldn’t connect to restore this saved project. Your information has not been changed; you can retry."; }
   }
-  return <SolarPlanner isSignedIn={isSignedIn} authConfigured={authConfigured} initialInputs={savedInputs} initialProjectId={savedProjectId} loadMessage={loadMessage} initialSavedDraftDirty={savedInputsMigrated}/>;
+  return <SolarPlanner isSignedIn={isSignedIn} authConfigured={authConfigured} userId={authenticatedUserId} initialInputs={savedInputs} initialProjectId={savedProjectId} loadMessage={loadMessage} initialSavedDraftDirty={savedInputsMigrated}/>;
 }

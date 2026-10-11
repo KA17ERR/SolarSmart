@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, RotateCcw, Sparkles } from "lucide-react";
 import { Alert, Badge, Button, Card, LoadingIndicator, ProgressIndicator, TextField } from "@/components/ui";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { convertAreaValue, DEMO_ASSESSMENT_DRAFT, EMPTY_ASSESSMENT_DRAFT, ORIENTATION_LABEL, PRIORITY_LABEL, PROPERTY_LABEL, ROOF_LABEL, SHADING_LABEL, prepareAssessment, validateAssessmentDraft, type AssessmentDraft, type AssessmentFieldErrors, type AreaUnit, type PreparedAssessment } from "@/lib/assessment";
+import { assessmentDraftFromPlanner, convertAreaValue, DEMO_ASSESSMENT_DRAFT, EMPTY_ASSESSMENT_DRAFT, ORIENTATION_LABEL, PRIORITY_LABEL, PROPERTY_LABEL, ROOF_LABEL, SHADING_LABEL, prepareAssessment, validateAssessmentDraft, type AssessmentDraft, type AssessmentFieldErrors, type AreaUnit, type PreparedAssessment } from "@/lib/assessment";
 import { calculateSolar, type SolarResults } from "@/lib/solar";
+import type { PlannerInputs } from "@/lib/planner";
+import { plannerFormToInputs, readPlannerDraft } from "@/lib/planner-draft";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { calculateSolarPlan, plannerInputsToSolarInputs } from "@/lib/planner";
+import { PageLoading } from "@/components/ui/page-loading";
 import { RoofPhotoInput } from "@/components/solar/roof-photo-input";
 import type { RoofPhotoPreview } from "@/lib/roof-photo";
+import BlurText from "@/components/animations/BlurText";
 
 const stepFields: Array<Array<keyof AssessmentDraft>> = [
   ["cityOrPostcode", "propertyType"],
@@ -27,8 +33,11 @@ const stepDescriptions = [
 
 export type AssessmentSubmission = PreparedAssessment & { results: SolarResults };
 
-export function AssessmentWizard({ onComplete }: { onComplete: (submission: AssessmentSubmission) => void }) {
+export function AssessmentWizard({ onComplete, sourcePlanner = false, initialPlannerInputs }: { onComplete: (submission: AssessmentSubmission) => void; sourcePlanner?: boolean; initialPlannerInputs?: PlannerInputs }) {
   const [draft, setDraft] = useState<AssessmentDraft>(EMPTY_ASSESSMENT_DRAFT);
+  const [plannerBaseline, setPlannerBaseline] = useState<AssessmentDraft | null>(null);
+  const [plannerBaselineInputs, setPlannerBaselineInputs] = useState<PlannerInputs | null>(null);
+  const [draftLoading, setDraftLoading] = useState(sourcePlanner);
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<AssessmentFieldErrors>({});
   const [notice, setNotice] = useState("");
@@ -39,8 +48,41 @@ export function AssessmentWizard({ onComplete }: { onComplete: (submission: Asse
   const roofPhotoUrl = useRef<string | null>(null);
   const isReview = step === 4;
   const progressStep = Math.min(step + 1, 4);
+  const plannerDifferences = useMemo(() => {
+    if (!plannerBaseline) return [];
+    const labels: Partial<Record<keyof AssessmentDraft, string>> = { cityOrPostcode: "location", usableRoofArea: "usable roof area", roofType: "roof type", shading: "shading", orientation: "orientation", monthlyConsumptionKwh: "monthly energy use", monthlyBill: "monthly bill", electricityTariff: "electricity tariff" };
+    return (Object.keys(labels) as Array<keyof AssessmentDraft>).filter(key => draft[key] !== plannerBaseline[key]).map(key => labels[key]).filter((value): value is string => Boolean(value));
+  }, [draft, plannerBaseline]);
 
   useEffect(() => () => { if (roofPhotoUrl.current) URL.revokeObjectURL(roofPhotoUrl.current); }, []);
+
+  useEffect(() => {
+    if (!sourcePlanner) return;
+    let cancelled = false;
+    void (async () => {
+      let plannerInputs = initialPlannerInputs;
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+        if (user && typeof window !== "undefined") {
+          const local = readPlannerDraft(window.sessionStorage, user.id);
+          if (local) plannerInputs = plannerFormToInputs(local.form);
+        }
+      } catch { /* If browser storage or session restoration is unavailable, use the saved server-side project when present. */ }
+      if (cancelled) return;
+      if (plannerInputs) {
+        const nextDraft = assessmentDraftFromPlanner(plannerInputs);
+        setDraft(nextDraft);
+        setPlannerBaseline(nextDraft);
+        setPlannerBaselineInputs(plannerInputs);
+        setNotice("Your saved Solar Planner details are prefilled. Review or edit them; assessment edits apply only to this estimate and do not overwrite your saved plan.");
+      } else {
+        setNotice("No saved planner data was found. You can continue with a new assessment or return to the planner.");
+      }
+      setDraftLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [sourcePlanner, initialPlannerInputs]);
 
   function replaceRoofPhoto(photo: RoofPhotoPreview | null) {
     if (roofPhotoUrl.current && roofPhotoUrl.current !== photo?.previewUrl) URL.revokeObjectURL(roofPhotoUrl.current);
@@ -71,6 +113,8 @@ export function AssessmentWizard({ onComplete }: { onComplete: (submission: Asse
     setErrors({});
     setSubmitError("");
     setNotice("Assessment restarted. Your previous entries have been cleared from this page.");
+    setPlannerBaseline(null);
+    setPlannerBaselineInputs(null);
     setStep(0);
   }
 
@@ -115,9 +159,12 @@ export function AssessmentWizard({ onComplete }: { onComplete: (submission: Asse
     try {
       const prepared = prepareAssessment(draft);
       await new Promise<void>(resolve => window.setTimeout(resolve, 160));
-      const results = calculateSolar(prepared.solarInputs);
+      const solarInputs = plannerBaselineInputs && plannerDifferences.length === 0
+        ? plannerInputsToSolarInputs(plannerBaselineInputs, calculateSolarPlan(plannerBaselineInputs).systemCapacityKw)
+        : prepared.solarInputs;
+      const results = calculateSolar(solarInputs);
       submissionLock.current = false;
-      onComplete({ ...prepared, results });
+      onComplete({ ...prepared, solarInputs, results });
     } catch {
       setSubmitError("We could not calculate this estimate. Your information is saved in this wizard; review the highlighted values and try again.");
       submissionLock.current = false;
@@ -126,11 +173,12 @@ export function AssessmentWizard({ onComplete }: { onComplete: (submission: Asse
     }
   }
 
+  if (draftLoading) return <PageLoading kind="assessment"/>;
   return <div className="app-shell assessment-flow-shell">
     <SiteHeader/>
     <main className="main" id="main-content" tabIndex={-1}>
       <div className="assessment-wizard-page">
-        <div className="wizard-page-heading"><div><Badge variant="success"><span className="demo-indicator"/> Local assessment · no account</Badge><p className="landing-eyebrow">Rooftop solar planning</p><h1>Let’s build an estimate for your property.</h1><p>Answer a few practical questions. Your inputs stay in this browser and feed a transparent, deterministic estimate.</p></div><div className="wizard-demo-actions"><Button variant="secondary" onClick={loadSample}><Sparkles size={15} aria-hidden="true"/> Try sample data</Button><Button variant="quiet" onClick={restart}><RotateCcw size={14} aria-hidden="true"/> Restart</Button></div></div>
+        <div className="wizard-page-heading"><div><Badge variant="success"><span className="demo-indicator"/> Local assessment · no account</Badge><p className="landing-eyebrow">Rooftop solar planning</p><h1><BlurText text="Let’s build an estimate for your property." delay={28} className="wizard-heading-reveal"/></h1><p>Answer a few practical questions. Your inputs stay in this browser and feed a transparent, deterministic estimate.</p></div><div className="wizard-demo-actions"><Button variant="secondary" onClick={loadSample}><Sparkles size={15} aria-hidden="true"/> Try sample data</Button><Button variant="quiet" onClick={restart}><RotateCcw size={14} aria-hidden="true"/> Restart</Button></div></div>
         <div id="solar-assessment" className="wizard-layout">
           <Card as="aside" className="wizard-side-note"><div className="wizard-side-icon" aria-hidden="true">i</div><h2>A useful early estimate</h2><p>We use your area, shade, orientation, and energy details with disclosed generic defaults. Your city or postcode is only shown with your results; it does not trigger a location lookup.</p><p className="wizard-side-demo"><strong>Sample values are illustrative.</strong> No live tariffs, irradiance, subsidy amounts, or approvals are fetched.</p><Link href="/" className="text-link">Back to SolarSmart home <ArrowRight size={14}/></Link></Card>
           <Card as="section" id="estimate" className="wizard-card" aria-labelledby="wizard-title">
@@ -138,11 +186,12 @@ export function AssessmentWizard({ onComplete }: { onComplete: (submission: Asse
             <ProgressIndicator value={progressStep} max={4} label="Assessment progress"/>
             <div className="wizard-title-row"><div><p className="landing-eyebrow">{isReview ? "Check before calculating" : `Step ${step + 1}`}</p><h2 id="wizard-title">{isReview ? "Review your details" : stepTitles[step]}</h2><p>{isReview ? "Make sure the details and assumptions look right. You can edit any section before calculating." : stepDescriptions[step]}</p></div>{!isReview && <span className="wizard-required-note">{step === 3 ? "Optional" : <><span aria-hidden="true">*</span> Required</>}</span>}</div>
             {notice && <Alert variant="info" title="Assessment update">{notice}</Alert>}
+            {plannerDifferences.length > 0 && <Alert variant="warning" title="These details differ from your Solar Planner">Changed: {plannerDifferences.join(", ")}. This estimate may differ from the saved plan. Your edits apply only to this assessment. <Button variant="quiet" size="sm" onClick={() => { if (plannerBaseline) setDraft({ ...plannerBaseline }); setSubmitError(""); }}>Restore planner values</Button></Alert>}
             {submitError && <Alert variant="error" title="Assessment needs attention">{submitError}</Alert>}
             {isReview ? <ReviewSummary draft={draft} hasRoofPhoto={Boolean(roofPhoto)} onEdit={targetStep => { setStep(targetStep); setNotice(""); setSubmitError(""); }}/> : <div className="wizard-step-content">{step === 0 ? <PropertyStep draft={draft} errors={errors} update={update}/> : step === 1 ? <RoofStep draft={draft} errors={errors} update={update} roofPhoto={roofPhoto} onRoofPhotoChange={replaceRoofPhoto}/> : step === 2 ? <EnergyStep draft={draft} errors={errors} update={update}/> : <PreferencesStep draft={draft} errors={errors} update={update}/>}</div>}
             <div className="wizard-footer-actions">
               <div className="wizard-footer-left"><Button variant="quiet" onClick={() => { setStep(current => Math.max(0, current - 1)); setSubmitError(""); }} disabled={step === 0 || submitting}><ArrowLeft size={15} aria-hidden="true"/> Back</Button><Link className="wizard-cancel-link" href="/">Cancel</Link></div>
-              {submitting ? <LoadingIndicator label="Calculating locally…"/> : isReview ? <Button onClick={calculate}><Check size={15} aria-hidden="true"/> Calculate my estimate</Button> : <Button onClick={step === 3 ? review : next}>{step === 3 ? "Review details" : "Next"}<ArrowRight size={15} aria-hidden="true"/></Button>}
+      {submitting ? <LoadingIndicator label="Calculating locally…"/> : isReview ? <Button specular onClick={calculate}><Check size={15} aria-hidden="true"/> Calculate my estimate</Button> : <Button specular onClick={step === 3 ? review : next}>{step === 3 ? "Review details" : "Next"}<ArrowRight size={15} aria-hidden="true"/></Button>}
             </div>
             <p className="wizard-privacy-note">Local calculation · no registration, upload, AI service, or AWS connection required.</p>
           </Card>

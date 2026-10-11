@@ -6,6 +6,8 @@ import { ArrowDown, ArrowRight, House, PanelsTopLeft, ChartNoAxesCombined } from
 import { SiteHeader } from "@/components/site-header";
 import { useAuthStatus } from "@/components/auth-state";
 import { CinematicSolarScene } from "@/components/solar/cinematic-solar-scene";
+import BlurText from "@/components/animations/BlurText";
+import ScrollReveal from "@/components/animations/ScrollReveal";
 
 const scenes = [
   { title: "Turn sunlight into energy for your home.", detail: "Explore a solar system designed around your roof and electricity use.", aria: "Daylight reaches a rooftop solar array." },
@@ -86,8 +88,8 @@ export function SolarStory() {
         <div className="scene-atmosphere" aria-hidden="true"/>
         <div className="scene-copy" data-phase={phase} aria-live="polite" aria-atomic="true">
           <p className="scene-eyebrow">A roof can be a source of energy</p>
-          <h1>{scenes[phase].title}</h1>
-          <p className="scene-subtitle">{scenes[phase].detail}</p>
+          <h1><BlurText key={`scene-title-${phase}`} text={scenes[phase].title} delay={35} animateBy="words" direction="top" className="scene-heading-reveal"/></h1>
+          <p className="scene-subtitle"><BlurText key={`scene-detail-${phase}`} text={scenes[phase].detail} delay={18} animateBy="words" direction="top" className="scene-copy-reveal"/></p>
           {authenticated && <Link href="/planner" className="scene-primary-cta">Design My Solar System <ArrowRight size={17} aria-hidden="true"/></Link>}
           <button type="button" className="scene-secondary-cta" onClick={exploreEnergyFlow}>Explore the Energy Flow <ArrowDown size={16} aria-hidden="true"/></button>
         </div>
@@ -98,10 +100,10 @@ export function SolarStory() {
       </div>
     </section>
     <section className="home-steps" id="how-it-works" aria-labelledby="steps-title">
-      <div className="home-steps-inner"><p className="landing-eyebrow">A simple place to begin</p><h2 id="steps-title">From roof to a clearer solar plan.</h2>
+      <div className="home-steps-inner"><p className="landing-eyebrow">A simple place to begin</p><ScrollReveal as="h2" id="steps-title" baseOpacity={0.55} enableBlur blurStrength={2} baseRotation={1} containerClassName="home-steps-title">From roof to a clearer solar plan.</ScrollReveal>
         <ol><li><span><House size={20}/></span><strong>Choose your home</strong><p>Use the sample property or enter approximate roof dimensions.</p></li><li><span><PanelsTopLeft size={20}/></span><strong>Place your panels</strong><p>Adjust a schematic layout and tell us about your energy use.</p></li><li><span><ChartNoAxesCombined size={20}/></span><strong>See your estimate</strong><p>Explore modeled generation, cost, savings, and next steps.</p></li></ol>
       </div>
     </section>
-    <section className="home-closing" id="about"><p className="landing-eyebrow">A free local-first demo</p><h2>Your roof. Your energy. Your plan.</h2><p>Solar calculations run on the device using your inputs.</p>{authenticated && <Link href="/planner" className="scene-primary-cta">Build My Solar <ArrowRight size={17}/></Link>}<Link href="/assessment?scenario=balanced#dashboard" className="home-sample-link">Or open the sample assessment</Link></section>
+    <section className="home-closing" id="about"><p className="landing-eyebrow">A free local-first demo</p><ScrollReveal as="h2" baseOpacity={0.65} enableBlur blurStrength={2} baseRotation={1} containerClassName="home-closing-title">Your roof. Your energy. Your plan.</ScrollReveal><p>Solar calculations run on the device using your inputs.</p>{authenticated && <Link href="/planner" className="scene-primary-cta">Build My Solar <ArrowRight size={17}/></Link>}<Link href="/assessment?scenario=balanced#dashboard" className="home-sample-link">Or open the sample assessment</Link></section>
   </>;
 }
