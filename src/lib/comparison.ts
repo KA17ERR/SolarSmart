@@ -94,6 +94,11 @@ export function createDefaultAlternatives(base: SolarInputs): Scenario[] {
   ];
 }
 
+/** Full reset payload for the sample-reset action; custom scenarios and edit state are discarded. */
+export function resetAlternativesState(base: SolarInputs): { scenarios: Scenario[]; selectedId: "base"; renameId: null; renameValue: "" } {
+  return { scenarios: createDefaultAlternatives(base), selectedId: "base", renameId: null, renameValue: "" };
+}
+
 /** Pins the baseline's inferred use so a tariff what-if changes price, not the assumed kWh load. */
 export function withPinnedAnnualConsumption(inputs: SolarInputs): SolarInputs {
   const inferredUse = Number.isFinite(inputs.utilityRate) && inputs.utilityRate > 0 ? inputs.monthlyBill * 12 / inputs.utilityRate : Number.NaN;

@@ -8,9 +8,9 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Alert, Badge, Button, Card, TextField } from "@/components/ui";
 import { calculateSolar, DEFAULT_CALCULATION_ASSUMPTIONS, DEFAULT_INPUTS, type CalculationAssumptions, type SolarInputs } from "@/lib/solar";
-import { buildEstimateReport } from "@/lib/report";
+import { buildScenarioReportHtml, scenarioReportFilename } from "@/lib/scenario-report";
 import { AnimatedText } from "@/components/animations/AnimatedText";
-import { createDefaultAlternatives, createScenario, duplicateScenario, evaluateScenario, formatMetric, renameScenario, updateScenarioAssumption, updateScenarioInput, withPinnedAnnualConsumption, type Scenario, type ScenarioMetric } from "@/lib/comparison";
+import { createDefaultAlternatives, createScenario, duplicateScenario, evaluateScenario, formatMetric, renameScenario, resetAlternativesState, updateScenarioAssumption, updateScenarioInput, withPinnedAnnualConsumption, type Scenario, type ScenarioMetric } from "@/lib/comparison";
 
 const fieldSpecs: Array<{ field: keyof SolarInputs; label: string; unit: string; step?: string; max?: string; hint?: string; percent?: boolean }> = [
   { field: "roofAreaSqFt", label: "Roof area", unit: "sq ft", max: "1000000", hint: "Approximate total roof area." },
@@ -49,18 +49,32 @@ export function ComparisonExperience({ baseInputs = DEFAULT_INPUTS, baseName = "
   function updateScenario(id: string, transform: (scenario: Scenario) => Scenario) { setScenarios(current => current.map(scenario => scenario.id === id ? transform(scenario) : scenario)); }
   function addScenario() { const scenario = createScenario("New scenario", base); setScenarios(current => [...current, scenario]); setSelectedId(scenario.id); setRenameId(scenario.id); setRenameValue(scenario.name); }
   function duplicateSelected() { const source = selected ?? createScenario(baseTitle, base, "assessment"); const copy = duplicateScenario(source); setScenarios(current => [...current, copy]); setSelectedId(copy.id); setRenameId(copy.id); setRenameValue(copy.name); }
-  function reset() { const nextBase = withPinnedAnnualConsumption(baseInputs); setBase(nextBase); setScenarios(createDefaultAlternatives(nextBase)); setSelectedId("base"); setRenameId(null); setToast("Comparison scenarios restored"); }
+  function reset() { const nextBase = withPinnedAnnualConsumption(baseInputs); const next = resetAlternativesState(nextBase); setBase(nextBase); setScenarios(next.scenarios); setSelectedId(next.selectedId); setRenameId(next.renameId); setRenameValue(next.renameValue); setToast("Comparison scenarios restored"); }
   function remove(id: string) { setScenarios(current => current.filter(scenario => scenario.id !== id)); if (selectedId === id) setSelectedId("base"); }
   function exportComparison() {
-    const selectedTitle = selected ? selected.name : baseTitle;
     const result = selected ? evaluation?.result : baseResult;
     if (!result) { setToast("Fix invalid scenario assumptions before exporting"); return; }
-    const report = buildEstimateReport(selected?.inputs ?? base, result, selectedTitle);
-    const rows = selected ? evaluation!.metrics.map(metric => `${metric.label}: base ${formatMetric(metric, metric.base)}; scenario ${formatMetric(metric, metric.alternative)}; difference ${formatDelta(metric)}`).join("\n") : "The selected view is the base assessment.";
-    downloadText(`${report}\n\nCOMPARISON WITH ${baseTitle.toUpperCase()}\n${rows}\n\nScenario-specific self-consumption assumption: ${((selected?.assumptions.physicalSelfConsumptionRate ?? DEFAULT_CALCULATION_ASSUMPTIONS.physicalSelfConsumptionRate) * 100).toFixed(0)}%. This is an illustrative load-timing assumption, not a measured hourly profile.`);
-    setToast("Comparison report downloaded");
+    try {
+      const selectedTitle = selected?.name ?? baseTitle;
+      const documentHtml = buildScenarioReportHtml({
+        generatedAt: new Date(), scenarioName: selectedTitle,
+        scenarioDescription: selected?.description ?? "This is the original assessment baseline used to compare alternative assumptions.",
+        sourceLabel: selected ? selected.origin === "sample" ? "Editable sample scenario" : "Editable user scenario" : baseSourceLabel,
+        changedFields: selected ? evaluation?.scenario.changedFields ?? [] : [], inputs: selected?.inputs ?? base, result, baseName: baseTitle, baseResult,
+      });
+      const url = URL.createObjectURL(new Blob([documentHtml], { type: "text/html;charset=utf-8" }));
+      window.open(url, "_blank", "noopener,noreferrer");
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = scenarioReportFilename(selectedTitle);
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setToast("Scenario report opened and downloaded. Use Print report in the report tab to print or save as PDF.");
+    } catch {
+      setToast("The report could not be generated. Please try again.");
+    }
   }
-  function resetAlternatives() { setScenarios(createDefaultAlternatives(base)); setSelectedId("base"); setToast("Sample alternatives restored for this base assessment"); }
+  function resetAlternatives() { const next = resetAlternativesState(base); setScenarios(next.scenarios); setSelectedId(next.selectedId); setRenameId(next.renameId); setRenameValue(next.renameValue); setToast("Built-in sample alternatives restored for this base assessment"); }
   function updateInput(id: string, field: keyof SolarInputs, value: number) {
     updateScenario(id, scenario => {
       let updated = updateScenarioInput(scenario, field, value);
@@ -122,9 +136,9 @@ export function ComparisonExperience({ baseInputs = DEFAULT_INPUTS, baseName = "
 function MetricRow({ metric }: { metric: ScenarioMetric }) {
   return <tr><th scope="row">{metric.label}<small>{metric.unit}</small></th><td>{formatMetric(metric, metric.base)}</td><td>{formatMetric(metric, metric.alternative)}</td><td className={metric.difference === null ? "" : metric.difference > 0 ? "delta-positive" : metric.difference < 0 ? "delta-negative" : ""}>{metric.difference === null ? "Unavailable" : `${metric.difference > 0 ? "+" : ""}${formatMetric(metric, metric.difference)}`}</td><td>{metric.percentDifference === null ? "—" : `${metric.percentDifference > 0 ? "+" : ""}${metric.percentDifference.toFixed(1)}%`}</td></tr>;
 }
-function formatDelta(metric: ScenarioMetric) { return metric.difference === null ? "unavailable" : `${metric.difference > 0 ? "+" : ""}${formatMetric(metric, metric.difference)} (${metric.percentDifference === null ? "percentage not meaningful" : `${metric.percentDifference.toFixed(1)}%`})`; }
 function ScenarioChart({ title, unit, data, dataKey, color, currency: isCurrency = false }: { title: string; unit: string; data: Array<{ name: string; capacity: number; savings: number }>; dataKey: "capacity" | "savings"; color: string; currency?: boolean }) {
-  return <Card as="section" className="comparison-chart" aria-label={`${title}, ${unit}`}><h3>{title}</h3><p>{unit}</p><div className="comparison-chart-canvas" role="img" aria-label={`${title} by scenario: ${data.map(row => `${row.name}: ${isCurrency ? currency(row[dataKey]) : `${row[dataKey].toFixed(1)} kW`}`).join("; ")}`}><ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 2 }}><CartesianGrid stroke="#edf0ec" vertical={false} strokeDasharray="3 4"/><XAxis dataKey="name" tick={{ fontSize: 10, fill: "#52645a" }} tickLine={false} axisLine={false}/><YAxis width={isCurrency ? 58 : 42} tick={{ fontSize: 10, fill: "#52645a" }} tickLine={false} axisLine={false} tickFormatter={value => isCurrency ? `$${Number(value).toLocaleString()}` : `${value} kW`}/><Tooltip formatter={value => isCurrency ? [currency(Number(value)), "USD / year"] : [`${Number(value).toFixed(2)} kW`, "Capacity"]}/><Bar dataKey={dataKey} name={title} fill={color} radius={[4, 4, 0, 0]}/></BarChart></ResponsiveContainer></div></Card>;
+  const axisLabel = (name: string) => name.length > 14 ? `${name.slice(0, 13)}…` : name;
+  return <Card as="section" className="comparison-chart" aria-label={`${title}, ${unit}`}><h3>{title}</h3><p>{unit}</p><div className="comparison-chart-canvas" role="region" aria-label={`${title} by scenario: ${data.map(row => `${row.name}: ${isCurrency ? currency(row[dataKey]) : `${row[dataKey].toFixed(1)} kW`}`).join("; ")}`}><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer data={data} margin={{ top: 12, right: 12, bottom: 16, left: 8 }}><CartesianGrid stroke="var(--chart-grid)" vertical={false} strokeDasharray="3 4"/><XAxis dataKey="name" interval="preserveStartEnd" minTickGap={10} tickFormatter={axisLabel} tick={{ fontSize: 10, fill: "var(--chart-axis)" }} tickLine={false} axisLine={false}/><YAxis width={isCurrency ? 66 : 54} tick={{ fontSize: 10, fill: "var(--chart-axis)" }} tickLine={false} axisLine={false} tickFormatter={value => isCurrency ? `$${Number(value).toLocaleString()}` : `${Number(value).toFixed(1)}`}/><Tooltip formatter={value => isCurrency ? [currency(Number(value)), "USD / year"] : [`${Number(value).toFixed(2)} kW`, "Capacity"]} wrapperStyle={{ zIndex: 40, pointerEvents: "none" }} allowEscapeViewBox={{ x: true, y: true }}/><Bar dataKey={dataKey} name={title} fill={color} radius={[4, 4, 0, 0]}/></BarChart></ResponsiveContainer></div></Card>;
 }
 function scenarioFieldError(field: keyof SolarInputs, value: number): string | undefined {
   if (!Number.isFinite(value)) return "Enter a finite number.";
@@ -140,5 +154,4 @@ function scenarioFieldError(field: keyof SolarInputs, value: number): string | u
   if (field === "electricityEscalation" && (value < 0 || value > 0.2)) return "Annual increase must be between 0 and 20%.";
   return undefined;
 }
-function downloadText(text: string) { const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "solarsmart-scenario-comparison.txt"; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); }
 

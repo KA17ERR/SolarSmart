@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateSolar, DEFAULT_INPUTS } from "./solar";
-import { createDefaultAlternatives, createScenario, duplicateScenario, evaluateScenario, formatMetric, renameScenario, updateScenarioAssumption, updateScenarioInput } from "./comparison";
+import { createDefaultAlternatives, createScenario, duplicateScenario, evaluateScenario, formatMetric, renameScenario, resetAlternativesState, updateScenarioAssumption, updateScenarioInput } from "./comparison";
 
 describe("scenario comparison", () => {
   it("uses the shared calculator and reports absolute and relative differences", () => {
@@ -60,6 +60,22 @@ describe("scenario comparison", () => {
     const custom = updateScenarioAssumption(original, "physicalSelfConsumptionRate", 0.4);
     expect(custom.assumptions.physicalSelfConsumptionRate).toBe(0.4);
     expect(evaluateScenario(DEFAULT_INPUTS, custom).scenario.changedFields).toContain("assumptions.physicalSelfConsumptionRate");
+  });
+  it("restores all built-in sample values and default selection after temporary edits", () => {
+    const base = { ...DEFAULT_INPUTS, annualConsumptionKwh: 10_500 };
+    const defaults = createDefaultAlternatives(base);
+    const expected = defaults.map(scenario => ({ name: scenario.name, inputs: scenario.inputs, origin: scenario.origin }));
+    const expectedResults = defaults.map(scenario => evaluateScenario(base, scenario).result?.systemKw);
+    const edited = createDefaultAlternatives(base).map(scenario => updateScenarioInput(scenario, "roofAreaSqFt", 999));
+    expect(edited.every(scenario => scenario.origin === "user")).toBe(true);
+
+    const reset = resetAlternativesState(base);
+    expect(reset.scenarios.map(({ name, inputs, origin }) => ({ name, inputs, origin }))).toEqual(expected);
+    expect(reset.scenarios.every(scenario => scenario.origin === "sample")).toBe(true);
+    expect(reset.selectedId).toBe("base");
+    expect(reset.renameId).toBeNull();
+    expect(reset.renameValue).toBe("");
+    expect(reset.scenarios.map(scenario => evaluateScenario(base, scenario).result?.systemKw)).toEqual(expectedResults);
   });
   it("labels materially different multi-input scenarios and formats payback gaps safely", () => {
     const scenario = createScenario("Changed roof and shade", { ...DEFAULT_INPUTS, roofAreaSqFt: 500, shadingFactor: 0.4 });

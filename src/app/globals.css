@@ -383,7 +383,18 @@ body .solar-app-content tbody tr:hover { background: rgb(155 128 240 / 9%); }
 .ui-chart-container, .comparison-chart, .comparison-chart-canvas { background: rgb(11 10 19 / 70%); }
 .recharts-cartesian-axis-tick-value, .recharts-label { fill: var(--chart-axis); }
 .recharts-cartesian-grid line { stroke: var(--chart-grid); }
-.recharts-default-tooltip, .recharts-tooltip-wrapper > div { border: 1px solid var(--glass-border) !important; background: rgb(13 12 23 / 96%) !important; color: var(--color-ink) !important; box-shadow: var(--shadow-md); }
+.recharts-tooltip-wrapper { z-index: 40 !important; pointer-events: none; transition: opacity 120ms ease-out; }
+.recharts-default-tooltip, .recharts-tooltip-wrapper > div { max-width: min(250px, calc(100vw - 32px)); padding: 9px 11px !important; border: 1px solid rgb(185 202 232 / 22%) !important; border-radius: 10px !important; background: rgb(14 24 42 / 78%) !important; color: #f2f6ff !important; box-shadow: 0 12px 32px rgb(0 0 0 / 28%) !important; backdrop-filter: blur(16px) saturate(125%); -webkit-backdrop-filter: blur(16px) saturate(125%); white-space: normal !important; overflow-wrap: anywhere; line-height: 1.45; }
+.recharts-tooltip-label { margin-bottom: 5px !important; color: #f2f6ff !important; font-size: 12px !important; font-weight: 700; white-space: normal !important; overflow-wrap: anywhere; }
+.recharts-tooltip-item-list { display: grid; gap: 3px; margin: 0; padding: 0; }
+.recharts-tooltip-item { display: flex !important; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; margin: 0 !important; color: #d9e4f5 !important; font-size: 11px !important; line-height: 1.4; }
+.recharts-tooltip-item-name { min-width: 0; overflow-wrap: anywhere; }
+.recharts-tooltip-item-value { flex: none; color: #fff !important; font-weight: 700; }
+.recharts-legend-wrapper { overflow: visible !important; }
+.recharts-legend-item { max-width: 100%; margin: 0 7px 3px !important; white-space: normal; vertical-align: middle; }
+.recharts-legend-item-text { color: var(--color-ink-soft) !important; font-size: 10px; line-height: 1.35; white-space: normal; }
+.result-chart, .comparison-chart, .result-chart-wrap, .comparison-chart-canvas { overflow: visible; }
+@media (prefers-reduced-motion: reduce) { .recharts-tooltip-wrapper { transition: none !important; } }
 .ui-tooltip-trigger { border-color: var(--glass-border); background: rgb(29 25 46 / 90%); color: var(--color-primary); }
 .ui-tooltip, .ui-notification, .ui-dialog { border-color: var(--glass-border); background: var(--color-glass-strong); color: var(--color-ink); backdrop-filter: blur(var(--glass-blur)); }
 .ui-dialog::backdrop { background: rgb(0 0 0 / 72%); }
