@@ -4,6 +4,8 @@ export interface BlurTextProps {
   text?: string;
   delay?: number;
   className?: string;
+  id?: string;
+  "aria-label"?: string;
   animateBy?: "words" | "letters";
   direction?: "top" | "bottom";
   threshold?: number;

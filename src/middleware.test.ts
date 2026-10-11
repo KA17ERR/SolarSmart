@@ -47,6 +47,13 @@ describe("Supabase session middleware", () => {
     expect(mocks.createServerClient).not.toHaveBeenCalled();
   });
 
+  it("protects assessment routes and preserves nested destinations", async () => {
+    const response = await middleware(new NextRequest("https://solarsmart.example/assessment/insights/consumption-savings?scenario=balanced"));
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://solarsmart.example/login?next=%2Fassessment%2Finsights%2Fconsumption-savings%3Fscenario%3Dbalanced");
+    expect(mocks.createServerClient).not.toHaveBeenCalled();
+  });
+
   it("fails closed when Supabase cannot verify a session", async () => {
     mocks.config = { url: "https://project.supabase.co", publishableKey: "public-key" };
     mocks.createServerClient.mockReturnValue({ auth: { getClaims: async () => ({ data: { claims: null }, error: new Error("session unavailable") }) } });

@@ -35,6 +35,7 @@ const ScrollReveal = ({
       );
     });
   }, [children]);
+  const accessibleText = typeof children === 'string' ? children : undefined;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -105,8 +106,8 @@ const ScrollReveal = ({
   }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, rotationEnd, wordAnimationEnd, blurStrength]);
 
   return (
-    <Element id={id} ref={containerRef} className={`scroll-reveal ${containerClassName}`}>
-      <span className={`scroll-reveal-text ${textClassName}`}>{splitText}</span>
+    <Element id={id} ref={containerRef} aria-label={accessibleText} className={`scroll-reveal ${containerClassName}`}>
+      <span aria-hidden="true" className={`scroll-reveal-text ${textClassName}`}>{splitText}</span>
     </Element>
   );
 };

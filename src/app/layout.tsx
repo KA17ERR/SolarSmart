@@ -7,7 +7,7 @@ import { hasSupabaseConfiguration } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const metadata: Metadata = {
   title: "SolarSmart · Rooftop solar, made clear",
-  description: "Explore a transparent rooftop solar planning estimate with editable assumptions. No account or credentials required.",
+  description: "Explore a clear rooftop solar planning experience with transparent assumptions and account-aware project tools.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

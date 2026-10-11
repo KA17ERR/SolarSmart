@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown, Home, Menu, Sun, X } from "lucide-react";
@@ -16,10 +17,14 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
   const inAssessment = pathname.startsWith("/assessment");
   const inPlanner = pathname.startsWith("/planner");
   const inDashboard = pathname.startsWith("/dashboard");
-  const [active, setActive] = useState(inAssessment || inDashboard ? "dashboard" : inPlanner ? "planner" : "home");
+  const [active, setActive] = useState(inAssessment ? "assessment" : inDashboard ? "dashboard" : inPlanner ? "planner" : "home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasDashboard, setHasDashboard] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => { setPortalReady(true); }, []);
 
   function hrefFor(id: string) {
     if (id === "planner") return "/planner";
@@ -32,7 +37,7 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
   useEffect(() => {
     const dashboardAvailable = !!document.getElementById("dashboard");
     setHasDashboard(dashboardAvailable);
-    setActive(inAssessment ? dashboardAvailable ? "dashboard" : "home" : inDashboard ? "dashboard" : inPlanner ? "planner" : "home");
+    setActive(inAssessment ? "assessment" : inDashboard ? "dashboard" : inPlanner ? "planner" : "home");
     const targets = MAIN_NAVIGATION_LINKS.map(link => document.getElementById(link.id)).filter((target): target is HTMLElement => target !== null);
     const observer = new IntersectionObserver(entries => {
       const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
@@ -45,10 +50,14 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
   }, [inAssessment, inDashboard, inPlanner]);
 
   useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
     const onPointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && !headerRef.current?.contains(event.target)) setMenuOpen(false);
+      if (event.target instanceof Node && !headerRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) setMenuOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onPointerDown);
@@ -71,12 +80,12 @@ export function SiteHeader({ showMainMenuLink = false, accordionOnly = false }: 
       {unauthenticated && <><Link className="header-login" href="/login">Log in</Link><Link className="header-login" href="/signup">Sign up</Link></>}
       {authenticated && <><Link className="header-login" href="/dashboard">Energy Dashboard</Link><ButtonLink className="header-cta" href="/planner">Build My Solar <span aria-hidden="true">→</span></ButtonLink><LogoutButton className="header-login header-sign-out"/></>}
       </div>
-      <nav id="main-card-navigation" className={`card-nav-content${menuOpen ? " open" : ""}`} aria-label="Main navigation" aria-hidden={!menuOpen}>
+      {portalReady && createPortal(<nav ref={menuRef} id="main-card-navigation" className={`card-nav-content${menuOpen ? " open" : ""}`} aria-label="Main navigation" aria-hidden={!menuOpen}>
         {visibleLinks.map(link => { const index = MAIN_NAVIGATION_LINKS.findIndex(item => item.id === link.id); const kicker = link.id === "how-it-works" ? "Discover" : link.id === "planner" ? "Design" : link.id === "assessment" ? "Review" : "Explore"; const description = link.id === "how-it-works" ? "See how a solar plan comes together." : link.id === "planner" ? "Build a plan around your roof and energy use." : link.id === "assessment" ? "Review an estimate with your project inputs." : "Explore modeled generation, savings, and assumptions."; return <a key={link.id} href={hrefFor(link.id)} className={`nav-card${index === MAIN_NAVIGATION_LINKS.length - 1 ? " nav-card-accent" : ""}${active === link.id ? " active" : ""}`} aria-current={active === link.id ? "location" : undefined} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} onKeyDown={event => { if (event.key === "Escape") setMenuOpen(false); }}>
           <span className="nav-card-kicker">{kicker}</span><strong>{link.label}</strong><span className="nav-card-description">{description}</span><span className="nav-card-link">Open section <ArrowUpRight size={15} aria-hidden="true" /></span>
         </a>; })}
         {unauthenticated && <><Link className="nav-card auth-nav-card" href="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">Account</span><strong>Log in</strong><span className="nav-card-link">Sign in to your account <ArrowUpRight size={15}/></span></Link><Link className="nav-card auth-nav-card" href="/signup" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span className="nav-card-kicker">New here?</span><strong>Sign up</strong><span className="nav-card-link">Create an account <ArrowUpRight size={15}/></span></Link></>}
-      </nav>
+      </nav>, document.body)}
     </header>
   </>;
 }

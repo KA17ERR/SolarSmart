@@ -60,7 +60,8 @@ The build file writes only public Supabase settings and non-secret runtime selec
 | `SOLARSMART_AI_API_KEY_PARAMETER` | Hosted SAM assistant enabled | Server-only selector, non-secret | Full SSM parameter name (for example `/solarsmart/prod/assistant-api-key`); stored in Amplify env and `.env.production`. |
 | `SOLARSMART_AI_SECRET_REGION` | Hosted SAM assistant enabled | Server-only selector, non-secret | AWS region containing the SSM parameter; stored in Amplify env and `.env.production`. |
 | `SOLARSMART_AI_API_KEY` | Local SAM or non-Amplify server hosting only | Secret, server-only | Direct key for server-side use only. Do not set in Amplify build variables or `.env.production`; Amplify uses SSM instead. |
-| `NEXT_PUBLIC_MAP_TILE_URL`, `NEXT_PUBLIC_MAP_GEOCODER_URL` | Optional map endpoint override | Public | Optional browser-visible map/geocoder endpoints; no credentials should be included. |
+| `NEXT_PUBLIC_MAPTILER_API_KEY` | Planner satellite imagery and address suggestions | Public, origin-restricted provider key | MapTiler dashboard key. It is sent in browser tile/geocoding requests; restrict allowed origins and quotas at MapTiler. |
+| `NEXT_PUBLIC_MAP_TILE_URL`, `NEXT_PUBLIC_MAP_GEOCODER_URL`, `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` | Optional custom map provider | Public | Browser-visible custom endpoints and required provider attribution; do not put private credentials in these values. |
 
 The core frontend does not require AWS variables. Supabase configuration is optional for the anonymous demo, but both Supabase URL and publishable/anon key are required together for account flows and saved projects. The cloud AI endpoint and SSM settings are also optional; without them the local deterministic assistant remains in use.
 

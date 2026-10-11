@@ -5,16 +5,13 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { DASHBOARD_INSIGHTS, getDashboardInsight } from "@/lib/dashboard-insights";
+import { getDashboardInsight } from "@/lib/dashboard-insights";
 import { calculateSolar, validateInputs, type SolarInputs, type SolarResults } from "@/lib/solar";
 import { DEMO_SCENARIOS } from "@/lib/scenarios";
 import { buildRecommendations } from "@/lib/recommendations";
 import { GenerationProjectionChart, SavingsProjectionChart } from "@/components/solar/projection-charts";
 import "../../../dashboard-insights.css";
-
-export function generateStaticParams() {
-  return DASHBOARD_INSIGHTS.map(({ slug }) => ({ slug }));
-}
+import { AnimatedText } from "@/components/animations/AnimatedText";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -39,8 +36,8 @@ export default async function DashboardInsightPage({ params, searchParams }: { p
       <section className="insight-hero">
         <div className="insight-hero-copy">
           <p className="eyebrow">{insight.eyebrow}</p>
-          <h1>{insight.title}</h1>
-          <p>{insight.summary}</p>
+          <AnimatedText as="h1" text={insight.title} delay={20}/>
+          <AnimatedText text={insight.summary} delay={8}/>
           <div className="insight-hero-actions">
             <Link className="button button-primary" href={dashboardHref}>View dashboard <ArrowUpRight size={15} /></Link>
             <Link className="button button-secondary" href="/assessment">Start a new assessment <ArrowUpRight size={15} /></Link>
@@ -54,7 +51,7 @@ export default async function DashboardInsightPage({ params, searchParams }: { p
       {slug === "consumption-savings" && <SavingsProjectionChart result={result} />}
       <section className="insight-content" aria-label={`${insight.title} details`}>
         {insight.sections.map(section => <article className="insight-card" key={section.title}>
-          <div><h2>{section.title}</h2><p>{section.body}</p>{section.bullets && <ul>{section.bullets.map(bullet => <li key={bullet}>{bullet}</li>)}</ul>}</div>
+          <div><AnimatedText as="h2" effect="scroll" text={section.title} baseOpacity={0.86} enableBlur blurStrength={1} baseRotation={0}/><p>{section.body}</p>{section.bullets && <ul>{section.bullets.map(bullet => <li key={bullet}>{bullet}</li>)}</ul>}</div>
         </article>)}
       </section>
       <p className="insight-disclaimer">Planning information only. The dashboard uses the inputs and assumptions shown there; confirm site conditions, utility rates, and system details with qualified local sources.</p>

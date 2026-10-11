@@ -31,17 +31,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".next-build-engine-final/types/**/*.ts",
-    ".next-build-engine/types/**/*.ts",
-    ".next-build-final/types/**/*.ts",
-    ".next-build-ready/types/**/*.ts",
-    ".next-build-release/types/**/*.ts",
     ".next-build-solarfix/types/**/*.ts",
-    ".next-build-webthreads/types/**/*.ts",
-    ".next-build/types/**/*.ts",
-    ".next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next-dev-live/types/**/*.ts"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules"

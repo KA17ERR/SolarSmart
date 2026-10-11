@@ -17,6 +17,7 @@ const BlurText = ({
   text = '',
   delay = 200,
   className = '',
+  id = undefined,
   animateBy = 'words',
   direction = 'top',
   threshold = 0.1,
@@ -25,7 +26,7 @@ const BlurText = ({
   animationTo = undefined,
   easing = t => t,
   onAnimationComplete = undefined,
-  stepDuration = 0.35,
+  stepDuration = 0.5,
   as: Element = 'span'
 }) => {
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
@@ -34,22 +35,28 @@ const BlurText = ({
   const ref = useRef(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    const target = ref.current;
+    if (!target || target.nodeType !== 1) return;
+    let disposed = false;
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const updateMotion = () => { setReducedMotion(media.matches); if (media.matches) setInView(true); };
     updateMotion();
     media.addEventListener('change', updateMotion);
+    if (!('IntersectionObserver' in window)) {
+      setInView(true);
+      return () => media.removeEventListener('change', updateMotion);
+    }
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (!disposed && entry.isIntersecting && entry.target === target) {
           setInView(true);
-          observer.unobserve(ref.current);
+          observer.unobserve(entry.target);
         }
       },
       { threshold, rootMargin }
     );
-    observer.observe(ref.current);
-    return () => { observer.disconnect(); media.removeEventListener('change', updateMotion); };
+    observer.observe(target);
+    return () => { disposed = true; observer.disconnect(); media.removeEventListener('change', updateMotion); };
   }, [threshold, rootMargin]);
 
   const defaultFrom = useMemo(
@@ -78,7 +85,7 @@ const BlurText = ({
   const times = Array.from({ length: stepCount }, (_, i) => (stepCount === 1 ? 0 : i / (stepCount - 1)));
 
   return (
-    <Element ref={ref} className={className} style={{ display: 'inline-flex', flexWrap: 'wrap' }}>
+    <Element ref={ref} id={id} aria-label={text} className={className} style={{ display: 'inline-flex', flexWrap: 'wrap' }}>
       {elements.map((segment, index) => {
         const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
 
@@ -91,10 +98,11 @@ const BlurText = ({
 
         return (
           <motion.span
+            aria-hidden="true"
             className="inline-block will-change-[transform,filter,opacity]"
             key={`${text}-${index}`}
             initial={reducedMotion ? false : fromSnapshot}
-            animate={reducedMotion ? { filter: 'blur(0px)', opacity: 1, y: 0 } : inView ? animateKeyframes : fromSnapshot}
+            animate={reducedMotion ? { filter: 'blur(0px)', opacity: 1, y: 0 } : inView ? animateKeyframes : undefined}
             transition={spanTransition}
             onAnimationComplete={index === elements.length - 1 ? onAnimationComplete : undefined}
           >

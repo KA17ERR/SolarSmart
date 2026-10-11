@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
   title: "SolarSmart · Your roof, your energy, your plan",
-  description: "Explore a local, transparent rooftop solar planning estimate with no account required.",
+  description: "Learn how a rooftop solar plan comes together, with clear assumptions and account-aware planning tools.",
 };
 
 export default function Home() {

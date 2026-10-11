@@ -9,6 +9,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Alert, Badge, Button, Card, TextField } from "@/components/ui";
 import { calculateSolar, DEFAULT_CALCULATION_ASSUMPTIONS, DEFAULT_INPUTS, type CalculationAssumptions, type SolarInputs } from "@/lib/solar";
 import { buildEstimateReport } from "@/lib/report";
+import { AnimatedText } from "@/components/animations/AnimatedText";
 import { createDefaultAlternatives, createScenario, duplicateScenario, evaluateScenario, formatMetric, renameScenario, updateScenarioAssumption, updateScenarioInput, withPinnedAnnualConsumption, type Scenario, type ScenarioMetric } from "@/lib/comparison";
 
 const fieldSpecs: Array<{ field: keyof SolarInputs; label: string; unit: string; step?: string; max?: string; hint?: string; percent?: boolean }> = [
@@ -72,7 +73,7 @@ export function ComparisonExperience({ baseInputs = DEFAULT_INPUTS, baseName = "
   return <div className="app-shell"><SiteHeader/><main className="main" id="main-content" tabIndex={-1}>
     <header className="topbar"><div className="breadcrumbs">Solar planning&nbsp; / &nbsp;<b>Scenario comparison</b></div><div className="top-right"><div className="demo-pill"><i className="dot"/>LOCAL COMPARISON</div></div></header>
     <div className="content comparison-page">
-      <div className="comparison-heading"><div><div className="eyebrow">Decision support · estimates only</div><h1>Compare solar scenarios</h1><p>Explore how different assumptions change the same deterministic estimate. No AI or cloud services are used.</p></div><Button variant="secondary" onClick={() => { if (document.referrer.includes("/assessment")) router.back(); else router.push("/assessment"); }}><ArrowLeft size={15}/> Back to results</Button></div>
+      <div className="comparison-heading"><div><div className="eyebrow">Decision support · estimates only</div><AnimatedText as="h1" text="Compare solar scenarios" delay={20}/><AnimatedText text="Explore how different assumptions change the same deterministic estimate. No AI or cloud services are used." delay={8}/></div><Button variant="secondary" onClick={() => { if (document.referrer.includes("/assessment")) router.back(); else router.push("/assessment"); }}><ArrowLeft size={15}/> Back to results</Button></div>
       <Alert title="Compare one scenario at a time" variant="info">Each alternative is compared with the same base assessment. Changing several assumptions at once can show a combined effect, but cannot tell which input caused it.</Alert>
 
       <section className="comparison-layout" aria-label="Scenario choices and selected assumptions">

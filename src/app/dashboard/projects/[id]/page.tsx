@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Alert, Card } from "@/components/ui";
 import { hasSupabaseConfiguration } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AnimatedText } from "@/components/animations/AnimatedText";
 
 export const metadata: Metadata = { title: "Saved solar plan · SolarSmart" };
 type MaybeResult = { data: Record<string, unknown> | null; error: unknown };
@@ -30,7 +31,7 @@ export default async function SavedProjectPage({ params }: { params: Promise<{ i
   ]) as [MaybeResult, MaybeResult, MaybeResult];
   const output = assessment.data?.outputs && typeof assessment.data.outputs === "object" ? assessment.data.outputs as Record<string, unknown> : null;
   const payback = value(output, "paybackYears");
-  return <div className="app-shell"><SiteHeader/><main id="main-content" className="main account-main" tabIndex={-1}><div className="account-container"><Link className="account-back" href="/dashboard"><ArrowLeft size={15}/> All projects</Link><p className="landing-eyebrow">Saved private project</p><h1>{project.name}</h1><p>{project.location_label} · {project.assessment_status}</p><Link className="ui-button ui-button-primary saved-project-edit" href={`/planner?project=${encodeURIComponent(id)}`}>Continue editing this plan <ArrowRight size={16}/></Link>
+  return <div className="app-shell"><SiteHeader/><main id="main-content" className="main account-main" tabIndex={-1}><div className="account-container"><Link className="account-back" href="/dashboard"><ArrowLeft size={15}/> All projects</Link><p className="landing-eyebrow">Saved private project</p><AnimatedText as="h1" text={project.name} delay={20}/><AnimatedText as="p" text={`${project.location_label} · ${project.assessment_status}`} delay={8}/><Link className="ui-button ui-button-primary saved-project-edit" href={`/planner?project=${encodeURIComponent(id)}`}>Continue editing this plan <ArrowRight size={16}/></Link>
     {(roof.error || system.error || assessment.error || !assessment.data) && <Alert variant="warning" title="Some project details are unavailable">The project record is saved, but one or more assessment sections could not be loaded.</Alert>}
     <div className="saved-project-detail-grid"><Card><h2>Roof and layout</h2><dl><div><dt>Dimensions</dt><dd>{fmt(value(roof.data, "width_m"), 1)} × {fmt(value(roof.data, "length_m"), 1)} m</dd></div><div><dt>Orientation</dt><dd>{String(roof.data?.roof_facing ?? "Not saved")}</dd></div><div><dt>Shading</dt><dd>{String(roof.data?.shading ?? "Not saved")}</dd></div><div><dt>Roof tilt</dt><dd>{fmt(value(roof.data, "tilt_degrees"))}°</dd></div></dl></Card>
       <Card><h2>Solar system</h2><dl><div><dt>Panels</dt><dd>{fmt(value(system.data, "panel_count"))}</dd></div><div><dt>Modeled capacity</dt><dd>{fmt(value(system.data, "installed_capacity_kw"), 2)} kW</dd></div><div><dt>Panel rating</dt><dd>{fmt(value(system.data, "panel_watts"))} W</dd></div><div><dt>Battery</dt><dd>{(value(system.data, "battery_capacity_kwh") ?? 0) <= 0 ? "Not included" : `${fmt(value(system.data, "battery_capacity_kwh"), 1)} kWh`}</dd></div></dl></Card>

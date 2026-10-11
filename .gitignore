@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .next-build*/
+.next-satellite-build/
 *.tsbuildinfo
 out/
 coverage/

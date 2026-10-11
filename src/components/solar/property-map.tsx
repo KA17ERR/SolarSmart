@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
+import Image from "next/image";
 import { AlertCircle, LoaderCircle, MapPin, Search } from "lucide-react";
 import { isValidGeocodeQuery, parseGeocodeResults, type GeocodeResult } from "@/lib/map-search";
 
@@ -9,10 +10,19 @@ type SearchHit = GeocodeResult;
 type Coordinates = { lat: number; lng: number };
 const SAMPLE: Coordinates = { lat: 30.2672, lng: -97.7431 };
 const UNRESOLVED: Coordinates = { lat: 20, lng: 0 };
-const GEOCODER = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim() || "https://nominatim.openstreetmap.org/search";
-const TILE_URL = process.env.NEXT_PUBLIC_MAP_TILE_URL?.trim() || "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_API_KEY?.trim() || "";
+const TILE_URL_OVERRIDE = process.env.NEXT_PUBLIC_MAP_TILE_URL?.trim() || "";
+const GEOCODER = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim() || "https://api.maptiler.com/geocoding";
+const CUSTOM_TILE_ATTRIBUTION = process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION?.trim() || "";
+const TILE_URL = TILE_URL_OVERRIDE
+  ? CUSTOM_TILE_ATTRIBUTION ? TILE_URL_OVERRIDE : ""
+  : MAPTILER_KEY ? `https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}.jpg?key=${encodeURIComponent(MAPTILER_KEY)}` : "";
+const MAP_ATTRIBUTION = TILE_URL_OVERRIDE
+  ? CUSTOM_TILE_ATTRIBUTION
+  : '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>';
+const USES_MAPTILER_TILES = !TILE_URL_OVERRIDE && Boolean(MAPTILER_KEY);
 
-/** Optional online street map. No precise location is requested or sent automatically. */
+/** Satellite hybrid imagery is loaded automatically when the public MapTiler key is configured. */
 export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLabel }: { onConfirm: (location: Coordinates & { label: string }) => void; onUseSample: () => void; initialLocation?: Coordinates | null; initialLabel?: string }) {
   const mapElement = useRef<HTMLDivElement>(null);
   const map = useRef<Leaflet.Map | null>(null);
@@ -56,14 +66,17 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
       if (disposed || !mapElement.current) return;
       const mapNode = mapElement.current;
       const start = initialLocationRef.current ?? UNRESOLVED;
-      const activeMap = L.map(mapNode, { zoomControl: true, scrollWheelZoom: false, attributionControl: true }).setView([start.lat, start.lng], initialLocationRef.current ? 15 : 2);
+      const activeMap = L.map(mapNode, { zoomControl: true, scrollWheelZoom: false, attributionControl: true }).setView([start.lat, start.lng], initialLocationRef.current ? 17 : 2);
       instance = activeMap;
-      const layer = L.tileLayer(TILE_URL, {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
-      });
-      layer.on("tileerror", () => setTilesUnavailable(true));
-      layer.addTo(activeMap);
+      if (TILE_URL) {
+        const layer = L.tileLayer(TILE_URL, { maxZoom: 22, attribution: MAP_ATTRIBUTION, crossOrigin: true });
+        layer.on("tileload", () => { setTilesUnavailable(false); setMapLoading(false); });
+        layer.on("tileerror", () => { setTilesUnavailable(true); setMapLoading(false); });
+        layer.addTo(activeMap);
+        window.setTimeout(() => setMapLoading(false), 12000);
+      } else {
+        setMapLoading(false);
+      }
       const markerIcon = L.divIcon({ className: "solar-map-pin", html: '<span aria-hidden="true"></span>', iconSize: [24, 30], iconAnchor: [12, 28] });
       const activePin = initialLocationRef.current ? L.marker([start.lat, start.lng], { draggable: true, title: "Selected approximate property location", keyboard: true, alt: "Selected approximate property location", icon: markerIcon }).addTo(activeMap) : null;
       if (activePin) activePin.on("dragend", () => {
@@ -80,7 +93,6 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
       });
       map.current = activeMap;
       marker.current = activePin;
-      setMapLoading(false);
       resize = new ResizeObserver(() => activeMap.invalidateSize({ pan: false }));
       resize.observe(mapNode);
     }).catch(() => { setMapLoading(false); setError("The interactive map could not load in this browser. Use the sample property and continue with manual roof details."); });
@@ -122,9 +134,21 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
     const timeout = window.setTimeout(() => controller.abort(), 9000);
     lastSearch.current = Date.now();
     try {
-      const url = new URL(GEOCODER);
-      url.searchParams.set("q", text);
-      url.searchParams.set("format", "jsonv2");
+      if (!MAPTILER_KEY && !process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim()) {
+        setError("Address suggestions need a MapTiler API key. Add NEXT_PUBLIC_MAPTILER_API_KEY to .env.local and restart the app, or choose a point on the map.");
+        return;
+      }
+      const customGeocoder = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim();
+      const url = customGeocoder
+        ? new URL(customGeocoder)
+        : new URL(`${GEOCODER.replace(/\/$/, "")}/${encodeURIComponent(text)}.json`);
+      if (customGeocoder) {
+        url.searchParams.set("q", text);
+        url.searchParams.set("format", "jsonv2");
+      } else {
+        url.searchParams.set("autocomplete", "true");
+        url.searchParams.set("key", MAPTILER_KEY);
+      }
       url.searchParams.set("limit", "5");
       const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error("search unavailable");
@@ -173,18 +197,21 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
   }
 
   return <section className="property-map-card" aria-labelledby="property-map-title">
-    <div className="property-map-heading"><div><p className="landing-eyebrow">Optional location search</p><h3 id="property-map-title">Find an approximate property location</h3><p>Suggestions use OpenStreetMap/Nominatim after you type at least three characters. No device location is requested. A marker does not identify a specific building.</p></div><MapPin aria-hidden="true" size={19}/></div>
+    <div className="property-map-heading"><div><p className="landing-eyebrow">Optional location search</p><h3 id="property-map-title">Find an approximate property location</h3><p>MapTiler suggestions appear after you type at least three characters. No device location is requested. A marker does not identify a specific building.</p></div><MapPin aria-hidden="true" size={19}/></div>
     <div className="property-map-search">
       <label htmlFor="property-location-search">Search by city, postcode, landmark, or address</label>
       <div><input id="property-location-search" role="combobox" aria-autocomplete="list" aria-expanded={hits.length > 0} aria-controls="property-location-results" aria-activedescendant={hits.length ? `property-location-option-${activeHit}` : undefined} value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === "ArrowDown" && hits.length) { event.preventDefault(); setActiveHit(index => (index + 1) % hits.length); } else if (event.key === "ArrowUp" && hits.length) { event.preventDefault(); setActiveHit(index => (index - 1 + hits.length) % hits.length); } else if (event.key === "Enter" && hits.length) { event.preventDefault(); selectHit(hits[activeHit]); } else if (event.key === "Escape") { setHits([]); setError(""); } else if (event.key === "Enter") { event.preventDefault(); void search(query); } }} maxLength={120} placeholder="e.g. Austin, TX" autoComplete="off"/><button type="button" onClick={() => void search(query)} disabled={busy || query.trim().length < 2}>{busy ? <><LoaderCircle size={15} className="spin"/> Searching</> : <><Search size={15}/> Search</>}</button></div>
     </div>
-    {mapLoading && <p role="status" className="property-map-status">Loading optional street map…</p>}
-    {busy && <p role="status" className="property-map-status">Searching OpenStreetMap…</p>}
+    {mapLoading && <p role="status" className="property-map-status"><LoaderCircle size={15} className="spin"/>Loading satellite imagery…</p>}
+    {busy && <p role="status" className="property-map-status">Searching map locations…</p>}
     {error && <p role="alert" className="property-map-error"><AlertCircle size={15}/>{error}</p>}
     {hits.length > 0 && <ul id="property-location-results" role="listbox" className="property-map-results" aria-label="Location search suggestions">{hits.map((hit, index) => <li key={`${hit.lat}-${hit.lng}-${index}`}><button id={`property-location-option-${index}`} type="button" role="option" aria-selected={activeHit === index} onMouseEnter={() => setActiveHit(index)} onClick={() => selectHit(hit)}>{hit.displayName}</button></li>)}</ul>}
-    <div className="property-map" ref={mapElement} role="application" aria-label="Interactive OpenStreetMap. Pan and zoom the map, click to reposition the marker, or drag the marker." />
-    {tilesUnavailable && <p role="status" className="property-map-status">Street map tiles could not load. You can retry your connection or use the sample property and continue with manual roof dimensions.</p>}
+    <div className="property-map-frame"><div className="property-map" ref={mapElement} role="application" aria-label="Interactive satellite hybrid map. Pan and zoom the map, click to reposition the marker, or drag the marker." />
+      {USES_MAPTILER_TILES && <a className="property-map-provider-logo" href="https://www.maptiler.com/" target="_blank" rel="noreferrer" aria-label="Map imagery by MapTiler"><Image src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" width={74} height={16} unoptimized /></a>}
+    </div>
+    {!TILE_URL && (TILE_URL_OVERRIDE ? <p role="status" className="property-map-status">A custom tile URL is configured without its provider attribution. Add <code>NEXT_PUBLIC_MAP_TILE_ATTRIBUTION</code> with the provider’s required credit before loading tiles.</p> : <p role="status" className="property-map-status">Satellite imagery needs a MapTiler API key. Add <code>NEXT_PUBLIC_MAPTILER_API_KEY</code> to <code>.env.local</code> and restart the app. You can still choose a point on the map or use the sample property.</p>)}
+    {tilesUnavailable && <p role="status" className="property-map-status">Satellite imagery could not load. Check the MapTiler key, its domain restrictions, internet connection, and monthly usage quota. The map marker and manual roof details remain available.</p>}
     <div className="property-map-selection"><div><strong>Approximate point</strong><span>{selectedLabel}</span><small>{selectedResolved ? `${selected.lat.toFixed(5)}, ${selected.lng.toFixed(5)} · selected approximate coordinates` : "Choose a result or select a point on the map before confirming."}</small></div><div><button type="button" onClick={useSample}>Use sample property</button><button type="button" className="property-map-confirm" disabled={!selectedResolved} onClick={() => onConfirm({ ...selected, label: selectedLabel })}>Confirm location</button></div></div>
-    <p className="property-map-attribution-note">Map tiles load when the planner opens. Location text is sent to OpenStreetMap/Nominatim after you type three or more characters and pause briefly. This public geocoder integration is for a low-volume demo, not production-scale address search.</p>
+    <p className="property-map-attribution-note">Satellite imagery and address suggestions use MapTiler when the configured key is available. The key is public in browser requests and must be restricted to this website’s allowed origins. Searching sends the text you type to MapTiler; device geolocation is never requested. Satellite imagery is for visual context only and does not measure the roof.</p>
   </section>;
 }

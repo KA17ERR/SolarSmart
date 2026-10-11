@@ -27,4 +27,16 @@ describe("optional map search boundaries", () => {
     expect(parseGeocodeResults({ results: [] })).toEqual([]);
     expect(parseGeocodeResults([{ display_name: {}, lat: 10, lon: 20 }])).toEqual([]);
   });
+
+  it("parses MapTiler GeoJSON autocomplete results as longitude/latitude points", () => {
+    const result = parseGeocodeResults({
+      type: "FeatureCollection",
+      features: [{
+        place_name: "1 Infinite Loop, Cupertino, California, United States",
+        center: [-122.0322, 37.323],
+        geometry: { type: "Point", coordinates: [-122.0322, 37.323] },
+      }],
+    });
+    expect(result).toEqual([{ displayName: "1 Infinite Loop, Cupertino, California, United States", lat: 37.323, lng: -122.0322 }]);
+  });
 });

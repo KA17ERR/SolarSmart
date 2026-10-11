@@ -5,6 +5,7 @@ import { getSupabaseConfiguration } from "@/lib/supabase/config";
 function isProtectedPath(pathname: string) {
   return pathname === "/planner" || pathname.startsWith("/planner/")
     || pathname === "/dashboard" || pathname.startsWith("/dashboard/")
+    || pathname === "/assessment" || pathname.startsWith("/assessment/")
     || pathname === "/account/update-password";
 }
 
@@ -56,5 +57,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/planner/:path*", "/login", "/dashboard/:path*", "/account/update-password"],
+  matcher: ["/planner/:path*", "/login", "/dashboard/:path*", "/assessment/:path*", "/account/update-password"],
 };
