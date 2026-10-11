@@ -4,7 +4,7 @@
 .dashboard-primary-chart { margin: 15px 0 24px; }
 .dashboard-primary-chart .result-chart { min-height: 365px; }
 .dashboard-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
-.dashboard-section-heading h2,.dashboard-gallery-heading h2 { margin: 4px 0; color: var(--color-ink); font-size: clamp(20px, 2.5vw, 27px); letter-spacing: -.035em; }
+.dashboard-section-heading h2,.dashboard-gallery-heading h2 { margin: 4px 0; color: var(--color-ink); font-size: clamp(19px, 2.5vw, 26px); letter-spacing: -.035em; }
 .dashboard-section-heading p:not(.eyebrow),.dashboard-gallery-heading p:not(.eyebrow) { margin: 0; color: var(--color-ink-soft); font-size: 12px; line-height: 1.5; }
 .dashboard-savings-section { margin: 24px 0; scroll-margin-top: 95px; }
 .dashboard-savings-section .savings-chart { max-width: 100%; }
@@ -106,8 +106,8 @@
 .ag-panel, .ag-panel-active { width: 100%; height: 108px; min-height: 108px; flex: 0 0 auto; flex-grow: 0; transition: height .25s ease, border-color .2s, background-color .2s; }
 .ag-panel-active { height: 174px; border-color: rgb(196 181 253 / 60%); }
 .ag-panel-label { right: 22px; bottom: 17px; left: 22px; gap: 6px; }
-.ag-panel-label strong { font-size: 14px; }
-.ag-panel-label > span { max-width: min(880px, 88%); font-size: 12px; }
+.ag-panel-label strong { font-size: 13px; }
+.ag-panel-label > span { max-width: min(880px, 88%); font-size: 11px; }
 .dashboard-lower-grid { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 680px) {
   .dashboard-index-main { min-height: calc(100vh - 52px); padding: 22px 16px; }
@@ -115,7 +115,7 @@
   .ag-panel, .ag-panel-active { min-height: 86px; height: 86px; }
   .ag-panel-active { height: 150px; }
   .ag-panel-label { right: 14px; bottom: 13px; left: 14px; }
-  .ag-panel-label strong { font-size: 13px; }
+  .ag-panel-label strong { font-size: 11px; }
   .ag-panel-label > span { max-width: 100%; font-size: 11px; }
 }
 
@@ -131,8 +131,8 @@
 .ag-panel-project-assumptions .ag-panel-image img { object-position: 49% 48%; }
 .ag-panel-shade { background: linear-gradient(90deg, rgb(7 9 17 / 88%) 0%, rgb(7 9 17 / 68%) 37%, rgb(7 9 17 / 12%) 100%), linear-gradient(0deg, rgb(7 9 17 / 22%), transparent 72%); }
 .ag-panel-label { right: 84px; bottom: 50%; left: clamp(28px, 4.5vw, 64px); gap: 10px; transform: translateY(50%); }
-.ag-panel-label strong { font-size: clamp(20px, 2.1vw, 27px); line-height: 1.15; letter-spacing: -.025em; }
-.ag-panel-label > span { max-width: min(620px, 78%); color: #e4e1ef; font-size: 14px; line-height: 1.5; opacity: 1; transform: none; }
+.ag-panel-label strong { font-size: clamp(19px, 2.1vw, 26px); line-height: 1.15; letter-spacing: -.025em; }
+.ag-panel-label > span { max-width: min(620px, 78%); color: #e4e1ef; font-size: 13px; line-height: 1.5; opacity: 1; transform: none; }
 .ag-panel-action { top: 50%; right: clamp(18px, 3vw, 42px); width: 44px; height: 44px; transform: translateY(-50%); opacity: 1; border-color: rgb(255 255 255 / 38%); background: rgb(11 13 24 / 58%); }
 .ag-panel:hover .ag-panel-action, .ag-panel-active .ag-panel-action { border-color: rgb(196 181 253 / 62%); background: rgb(72 58 115 / 72%); }
 @media (max-width: 980px) {
@@ -144,7 +144,7 @@
   .ag-panel, .ag-panel-active { min-height: 92px; height: 92px; }
   .ag-panel-active { height: 158px; }
   .ag-panel-label { right: 58px; left: 17px; gap: 6px; }
-  .ag-panel-label strong { font-size: 17px; }
+  .ag-panel-label strong { font-size: 16px; }
   .ag-panel-label > span { max-width: 100%; font-size: 11px; }
   .ag-panel-action { top: 50%; right: 13px; width: 34px; height: 34px; }
 }

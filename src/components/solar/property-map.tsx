@@ -16,7 +16,7 @@ const GEOCODER = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim() || "https://ap
 const CUSTOM_TILE_ATTRIBUTION = process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION?.trim() || "";
 const TILE_URL = TILE_URL_OVERRIDE
   ? CUSTOM_TILE_ATTRIBUTION ? TILE_URL_OVERRIDE : ""
-  : MAPTILER_KEY ? `https://api.maptiler.com/maps/hybrid/256/{z}/{x}/{y}.jpg?key=${encodeURIComponent(MAPTILER_KEY)}` : "";
+  : MAPTILER_KEY ? `https://api.maptiler.com/maps/hybrid-v4/256/{z}/{x}/{y}.jpg?key=${encodeURIComponent(MAPTILER_KEY)}` : "";
 const MAP_ATTRIBUTION = TILE_URL_OVERRIDE
   ? CUSTOM_TILE_ATTRIBUTION
   : '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>';
@@ -135,7 +135,6 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
     lastSearch.current = Date.now();
     try {
       if (!MAPTILER_KEY && !process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim()) {
-        setError("Address suggestions need a MapTiler API key. Add NEXT_PUBLIC_MAPTILER_API_KEY to .env.local and restart the app, or choose a point on the map.");
         return;
       }
       const customGeocoder = process.env.NEXT_PUBLIC_MAP_GEOCODER_URL?.trim();
@@ -153,7 +152,6 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
       const response = await fetch(url, { signal: controller.signal, headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error("search unavailable");
       const result: unknown = await response.json();
-      if (!Array.isArray(result)) throw new Error("invalid search response");
       const matches = parseGeocodeResults(result);
       if (!matches.length) { setError("No locations found. Try a nearby city or postcode, or continue with the sample property."); return; }
       setHits(matches);
@@ -209,8 +207,7 @@ export function PropertyMap({ onConfirm, onUseSample, initialLocation, initialLa
     <div className="property-map-frame"><div className="property-map" ref={mapElement} role="application" aria-label="Interactive satellite hybrid map. Pan and zoom the map, click to reposition the marker, or drag the marker." />
       {USES_MAPTILER_TILES && <a className="property-map-provider-logo" href="https://www.maptiler.com/" target="_blank" rel="noreferrer" aria-label="Map imagery by MapTiler"><Image src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" width={74} height={16} unoptimized /></a>}
     </div>
-    {!TILE_URL && (TILE_URL_OVERRIDE ? <p role="status" className="property-map-status">A custom tile URL is configured without its provider attribution. Add <code>NEXT_PUBLIC_MAP_TILE_ATTRIBUTION</code> with the provider’s required credit before loading tiles.</p> : <p role="status" className="property-map-status">Satellite imagery needs a MapTiler API key. Add <code>NEXT_PUBLIC_MAPTILER_API_KEY</code> to <code>.env.local</code> and restart the app. You can still choose a point on the map or use the sample property.</p>)}
-    {tilesUnavailable && <p role="status" className="property-map-status">Satellite imagery could not load. Check the MapTiler key, its domain restrictions, internet connection, and monthly usage quota. The map marker and manual roof details remain available.</p>}
+    {(!TILE_URL || tilesUnavailable) && <div role="status" className="property-map-imagery-state"><AlertCircle size={17} aria-hidden="true"/><span>{!TILE_URL ? TILE_URL_OVERRIDE ? <>A custom tile URL is configured without attribution. Add <code>NEXT_PUBLIC_MAP_TILE_ATTRIBUTION</code> before enabling it.</> : <>Satellite imagery and address suggestions require <code>NEXT_PUBLIC_MAPTILER_API_KEY</code>. Add your MapTiler public key to <code>.env.local</code> and restart the app. The marker and manual roof inputs remain available.</> : <>Satellite tiles could not load. Check the key, allowed website origins, provider quota, and network connection.</>}</span></div>}
     <div className="property-map-selection"><div><strong>Approximate point</strong><span>{selectedLabel}</span><small>{selectedResolved ? `${selected.lat.toFixed(5)}, ${selected.lng.toFixed(5)} · selected approximate coordinates` : "Choose a result or select a point on the map before confirming."}</small></div><div><button type="button" onClick={useSample}>Use sample property</button><button type="button" className="property-map-confirm" disabled={!selectedResolved} onClick={() => onConfirm({ ...selected, label: selectedLabel })}>Confirm location</button></div></div>
     <p className="property-map-attribution-note">Satellite imagery and address suggestions use MapTiler when the configured key is available. The key is public in browser requests and must be restricted to this website’s allowed origins. Searching sends the text you type to MapTiler; device geolocation is never requested. Satellite imagery is for visual context only and does not measure the roof.</p>
   </section>;
